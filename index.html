@@ -1,0 +1,2419 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>DV &amp; ORS Generator</title>
+<style>
+  :root{--bg:#f4f5f7;--card:#fff;--ink:#1f2933;--mut:#6b7280;--line:#d5d9e0;--pri:#1a56db}
+  *{box-sizing:border-box} body{margin:0;font:14px/1.4 system-ui,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+  header{background:#fff;border-bottom:1px solid var(--line);padding:10px 18px;display:flex;gap:18px;align-items:center;position:sticky;top:0;z-index:5}
+  header h1{font-size:16px;margin:0 12px 0 0} .tab{border:0;background:none;padding:8px 12px;cursor:pointer;border-radius:6px;color:var(--mut);font-weight:600}
+  .tab.on{background:#e8efff;color:var(--pri)} main{max-width:1050px;margin:16px auto;padding:0 14px}
+  section{display:none} section.on{display:block}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+  .card h2{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);margin:0 0 10px}
+  .g{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px} .span2{grid-column:span 2}
+  label{display:block;font-size:12px;color:var(--mut);margin-bottom:3px}
+  input,textarea,select{width:100%;padding:7px 8px;border:1px solid var(--line);border-radius:6px;font:inherit;background:#fff;color:var(--ink)}
+  textarea{resize:vertical} input.num{text-align:right}
+  table.t{width:100%;border-collapse:collapse} .t th{font-size:12px;text-align:left;color:var(--mut);padding:4px}
+  .t td{padding:3px;vertical-align:top} .modes{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+  .modes label{display:flex;gap:6px;align-items:center;color:var(--ink);font-size:14px;margin:0} .modes input{width:auto}
+  .chk{display:flex;gap:8px;align-items:center;color:var(--ink);font-size:14px} .chk input{width:auto}
+  button.b{padding:8px 14px;border-radius:6px;border:1px solid var(--line);background:#fff;cursor:pointer;font:inherit;font-weight:600}
+  button.p{background:var(--pri);border-color:var(--pri);color:#fff} button.x{border:0;background:none;color:#b42318;font-size:18px;cursor:pointer}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center} .tot{margin-left:auto;font-weight:700;font-size:16px}
+  .warn{color:#b42318;font-size:12px} #toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1f2933;color:#fff;padding:9px 16px;border-radius:8px;display:none}
+  .ph{border:2px dashed var(--line);border-radius:8px;height:72px;display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:12px;margin-bottom:6px;overflow:hidden;text-align:center;padding:4px}
+  .ph img{max-width:100%;max-height:100%}
+  .rt td,.rt th{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left} .rt th{font-size:12px;color:var(--mut)}
+  input.dd-in{padding-right:24px;background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236b7280' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 8px center}
+  #dd{position:fixed;display:none;z-index:50;max-height:300px;overflow:auto;min-width:440px;background:var(--card);border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.2)}
+  #dd div{padding:6px 10px;cursor:pointer;display:flex;gap:12px;font-size:13px} #dd b{font-weight:600;min-width:116px;color:var(--mut);font-variant-numeric:tabular-nums}
+  #dd div.on{background:#e8efff;color:#1a56db} #dd .ft{color:var(--mut);cursor:default;font-size:12px}
+  @media(prefers-color-scheme:dark){:root{--bg:#14171c;--card:#1d222a;--ink:#e6e8eb;--mut:#9aa4b2;--line:#323a46}
+    header{background:#1d222a} input,textarea,select,button.b{background:#14171c;color:var(--ink)} .tab.on{background:#233152;color:#9db8ff}}
+</style>
+</head>
+<body>
+<header>
+  <h1>DV &amp; ORS Generator</h1>
+  <button class="tab on" data-t="form">Voucher</button>
+  <button class="tab" data-t="list">DV Records</button>
+  <button class="tab" data-t="ors">ORS</button>
+  <button class="tab" data-t="orsList">ORS Records</button>
+  <button class="tab" data-t="set">Settings</button>
+</header>
+<div id="err" onclick="this.style.display='none'" style="display:none;background:#fdecea;color:#b42318;padding:10px 18px;border-bottom:1px solid #f5c2c0;cursor:pointer"></div>
+<main>
+
+<section id="form" class="on">
+  <div class="card"><h2>Header</h2><div class="g">
+    <div><label>Control No. (saved only, not printed)</label><input data-k="ctrl"></div>
+    <div><label>DV No. (optional, printed)</label><input data-k="dvNo"></div>
+    <div><label>Date</label><input type="date" data-k="date"></div>
+    <div><label>Fund Cluster</label><input data-k="fund"></div>
+    <div><label>ORS/BURS No.</label><input data-k="ors"></div>
+  </div></div>
+
+  <div class="card"><h2>Mode of Payment</h2><div class="modes">
+    <label><input type="radio" name="mode" value="MDS Check"> MDS Check</label>
+    <label><input type="radio" name="mode" value="Commercial Check"> Commercial Check</label>
+    <label><input type="radio" name="mode" value="ADA"> ADA</label>
+    <label><input type="radio" name="mode" value="Others"> Others</label>
+    <input data-k="modeOther" placeholder="If others, specify" style="max-width:220px">
+  </div></div>
+
+  <div class="card"><h2>Payee</h2><div class="g">
+    <div class="span2"><label>Payee *</label><input data-k="payee"></div>
+    <div><label>TIN / Employee No.</label><input data-k="tin"></div>
+    <div class="span2"><label>Address</label><input data-k="address"></div>
+  </div></div>
+
+  <div class="card"><h2>Particulars</h2>
+    <div class="g">
+      <div class="span2"><label>Line 1 - description of the disbursement (use the button below to add the amount in words)</label><textarea rows="4" data-k="desc"></textarea></div>
+      <div><label>Responsibility Center</label><input data-k="rc"></div>
+      <div><label>MFO/PAP</label><input data-k="mfo"></div>
+      <div><label>Amount</label><input class="num" type="number" step="0.01" data-k="amt"></div>
+    </div>
+    <div class="bar" style="margin:10px 0"><button class="b" id="genWords" type="button">Generate amount in words</button>
+      <select id="wordsBasis" style="width:auto"><option value="net">of the Amount Due (after adjustment)</option><option value="gross">of the Line 1 amount</option></select>
+      <span class="warn" style="color:var(--mut)">adds "in the total amount of ..." to the end of the description</span></div>
+    <label class="chk" style="margin:0 0 10px"><input type="checkbox" data-k="netOfTax"> Taxes withheld (utilities, procurement, catering, etc. - not withholding tax on compensation): add ", NET OF TAX" after the amount in words</label>
+    <div class="g">
+      <div class="span2"><label>Line 2 - adjustment</label><input data-k="adjLabel"></div>
+      <div class="span2"><label>Taxes withheld (short description, printed beside the deduction)</label><input data-k="taxDesc" placeholder="e.g. 5% percentage tax"></div>
+      <div><label>Adjustment amount (deducted)</label><input class="num" type="number" step="0.01" data-k="adj"></div>
+    </div>
+    <div class="bar" style="margin-top:8px"><span class="tot">Amount Due: <span id="total">0.00</span></span></div>
+  </div>
+  <div class="card"><h2>A. Certified by Supervisor</h2><div class="g">
+    <div><label>Printed Name</label><input data-k="supName"></div>
+    <div><label>Designation</label><input data-k="supDesig"></div>
+  </div></div>
+
+  <div class="card"><h2>B. Accounting Entry (max 16 lines)</h2>
+    <table class="t"><thead><tr><th style="width:40%">Account Title</th><th>UACS Code</th><th>Debit</th><th>Credit</th><th></th></tr></thead><tbody id="abody"></tbody></table>
+    <div class="bar" style="margin-top:8px"><button class="b" id="addA" type="button">+ Add line</button><span class="warn" id="bal"></span></div>
+  </div>
+
+  <div class="card"><h2>C. Certified (Accounting)</h2>
+    <div class="g" style="margin-bottom:10px">
+      <label class="chk"><input type="checkbox" data-k="cCash"> Cash available</label>
+      <label class="chk"><input type="checkbox" data-k="cAda"> Subject to Authority to Debit Account</label>
+      <label class="chk"><input type="checkbox" data-k="cDocs"> Supporting documents complete and amount claimed proper</label>
+    </div>
+    <div class="g">
+      <div><label>Printed Name</label><input data-k="accName"></div>
+      <div><label>Position</label><input data-k="accPos"></div>
+      <div><label>Date</label><input type="date" data-k="accDate"></div>
+    </div></div>
+
+  <div class="card"><h2>D. Approved for Payment</h2><div class="g">
+    <div><label>Printed Name</label><input data-k="agName"></div>
+    <div><label>Position</label><input data-k="agPos"></div>
+    <div><label>Date</label><input type="date" data-k="agDate"></div>
+  </div></div>
+
+  <div class="card"><h2>E. Receipt of Payment</h2><div class="g">
+    <div><label>Check / ADA No.</label><input data-k="checkNo"></div>
+    <div><label>Date</label><input type="date" data-k="checkDate"></div>
+    <div class="span2"><label>Bank Name &amp; Account Number</label><input data-k="bank"></div>
+    <div><label>Receiver's Printed Name</label><input data-k="recName"></div>
+    <div><label>Receipt Date</label><input type="date" data-k="recDate"></div>
+    <div><label>JEV No.</label><input data-k="jev"></div>
+    <div><label>JEV Date</label><input type="date" data-k="jevDate"></div>
+    <div class="span2"><label>Official Receipt No. &amp; Date / Other Documents</label><input data-k="orNo"></div>
+  </div></div>
+
+  <div class="bar">
+    <button class="b p" id="save" type="button">Save</button>
+    <button class="b" id="pdf" type="button">Export PDF</button><label class="chk" style="margin:0 0 0 6px">Font <select class="fontSel" style="width:auto"><option>Times New Roman</option><option>Arial</option></select></label>
+    <button class="b" id="new" type="button">New voucher</button>
+    <span id="status" class="warn" style="color:var(--mut)"></span>
+  </div>
+</section>
+
+<section id="list">
+  <div class="card"><div class="bar" style="margin-bottom:10px"><input id="q" placeholder="Search control no., DV no. or payee" style="max-width:300px"><button class="b" id="refresh" type="button">Refresh</button></div>
+    <table class="rt" style="width:100%;border-collapse:collapse"><thead><tr><th>Control No.</th><th>DV No.</th><th>Date</th><th>Payee</th><th style="text-align:right">Amount</th><th></th></tr></thead><tbody id="lbody"></tbody></table>
+    <p id="empty" style="color:var(--mut);display:none">No vouchers saved yet.</p></div>
+</section>
+
+<section id="ors">
+  <div class="card"><h2>Header</h2><div class="g">
+    <div><label>Control No. (saved only, not printed)</label><input data-os="ctrl"></div>
+    <div><label>Serial No. (optional, printed)</label><input data-os="serial"></div>
+    <div><label>Date</label><input type="date" data-os="date"></div>
+    <div><label>Fund Cluster</label><input data-os="fund"></div>
+  </div></div>
+
+  <div class="card"><h2>Payee</h2><div class="g">
+    <div class="span2"><label>Payee *</label><input data-os="payee"></div>
+    <div><label>Office</label><input data-os="office"></div>
+    <div class="span2"><label>Address</label><input data-os="address"></div>
+  </div></div>
+
+  <div class="card"><h2>Particulars (max 16 lines)</h2>
+    <table class="t"><thead><tr><th style="width:13%">Responsibility Center</th><th style="width:32%">Particulars (pick from the Object list)</th><th style="width:17%">MFO/PAP (pick from the PAP list)</th><th style="width:15%">UACS Object Code</th><th>Amount</th><th></th></tr></thead><tbody id="obody"></tbody></table>
+    <div class="bar" style="margin:8px 0"><button class="b" id="addOI" type="button">+ Add line</button><span class="tot">Total: <span id="oTotal">0.00</span></span></div>
+  </div>
+
+  <div class="card"><h2>A. Certified (Head, Requesting Office / Authorized Representative)</h2><div class="g">
+    <div><label>Printed Name</label><input data-os="supName"></div>
+    <div><label>Position</label><input data-os="supPos"></div>
+    <div><label>Date</label><input type="date" data-os="supDate"></div>
+  </div></div>
+
+  <div class="card"><h2>B. Certified (Head, Budget Division / Unit / Authorized Representative)</h2><div class="g">
+    <div><label>Printed Name</label><input data-os="budName"></div>
+    <div><label>Position</label><input data-os="budPos"></div>
+    <div><label>Date</label><input type="date" data-os="budDate"></div>
+  </div></div>
+
+  <div class="card"><h2>C. Status of Obligation (one line; leave empty to print it blank for handwriting)</h2>
+    <table class="t"><thead><tr><th style="width:15%">Date</th><th style="width:22%">Particulars</th><th style="width:17%">ORS/JEV/Check/ADA/TRA No.</th><th>Obligation (a)</th><th>Payable (b)</th><th>Payment (c)</th><th></th></tr></thead><tbody id="sbody"></tbody></table>
+    <div class="bar" style="margin-top:8px"><span class="warn" style="color:var(--mut)">Not Yet Due (a-b) and Due and Demandable (b-c) are worked out for you.</span></div>
+  </div>
+
+  <div class="bar">
+    <button class="b p" id="oSave" type="button">Save</button>
+    <button class="b" id="oPdf" type="button">Export PDF</button><label class="chk" style="margin:0 0 0 6px">Font <select class="fontSel" style="width:auto"><option>Times New Roman</option><option>Arial</option></select></label>
+    <button class="b" id="oNew" type="button">New ORS</button>
+    <span id="oStatus" class="warn" style="color:var(--mut)"></span>
+  </div>
+</section>
+
+<section id="orsList">
+  <div class="card"><div class="bar" style="margin-bottom:10px"><input id="oq" placeholder="Search control no., serial no. or payee" style="max-width:300px"><button class="b" id="orefresh" type="button">Refresh</button></div>
+    <table class="rt" style="width:100%;border-collapse:collapse"><thead><tr><th>Control No.</th><th>Serial No.</th><th>Date</th><th>Payee</th><th style="text-align:right">Amount</th><th></th></tr></thead><tbody id="olbody"></tbody></table>
+    <p id="oempty" style="color:var(--mut);display:none">No ORS saved yet.</p></div>
+</section>
+
+<section id="set">
+  <div class="card"><h2>Defaults (prefilled on every new voucher)</h2><div class="g">
+    <div><label>Fund Cluster</label><input data-s="fund"></div>
+    <div><label>Supervisor Name</label><input data-s="supName"></div>
+    <div><label>Supervisor Designation</label><input data-s="supDesig"></div>
+    <div><label>Head, Accounting Unit</label><input data-s="accName"></div>
+    <div><label>Accounting Position</label><input data-s="accPos"></div>
+    <div><label>Agency Head / Authorized Rep.</label><input data-s="agName"></div>
+    <div><label>Agency Head Position</label><input data-s="agPos"></div>
+  </div><div class="bar" style="margin-top:12px"><button class="b p" id="saveSet" type="button">Save settings</button></div></div>
+  <div class="card"><h2>Document font (applies to the voucher and the ORS PDFs)</h2><div class="g"><div><label>Font</label><select class="fontSel" data-s="font"><option>Times New Roman</option><option>Arial</option></select></div></div></div>
+  <div class="card"><h2>ORS defaults (prefilled on every new ORS)</h2><div class="g">
+    <div><label>Fund Cluster</label><input data-s="oFund"></div>
+    <div><label>Office</label><input data-s="oOffice"></div>
+    <div><label>Address</label><input data-s="oAddress"></div>
+    <div><label>A. Requesting Office Head - Name</label><input data-s="oSupName"></div>
+    <div><label>A. Position</label><input data-s="oSupPos"></div>
+    <div><label>B. Budget Head - Name</label><input data-s="oBudName"></div>
+    <div><label>B. Position</label><input data-s="oBudPos"></div>
+  </div><div class="bar" style="margin-top:12px"><button class="b p" id="saveSet2" type="button">Save settings</button></div></div>
+  <div class="card"><h2>DV header &amp; footer images (printed on the voucher PDF)</h2><div class="g">
+    <div><label>Header image</label><input type="file" accept="image/*" id="imgHeader"><div class="bar" style="margin-top:6px"><span id="stHeader" class="warn" style="color:var(--mut)"></span><button class="b" id="rmHeader" type="button">Remove</button></div></div>
+    <div><label>Footer image</label><input type="file" accept="image/*" id="imgFooter"><div class="bar" style="margin-top:6px"><span id="stFooter" class="warn" style="color:var(--mut)"></span><button class="b" id="rmFooter" type="button">Remove</button></div></div>
+  </div></div>
+  <div class="card"><h2>ORS header &amp; footer images (printed on the ORS PDF - separate from the voucher)</h2><div class="g">
+    <div><label>ORS header image - printed across the top, above the title, like the voucher header (wide banner, e.g. 1400 x 200 px)</label>
+      <div class="ph" id="phOrsHeader" data-empty="ORS header placeholder"></div>
+      <input type="file" accept="image/*" id="imgOrsHeader"><div class="bar" style="margin-top:6px"><span id="stOrsHeader" class="warn" style="color:var(--mut)"></span><button class="b" id="rmOrsHeader" type="button">Remove</button></div></div>
+    <div><label>ORS footer image - printed across the bottom, under the form (wide strip, e.g. 1400 x 110 px)</label>
+      <div class="ph" id="phOrsFooter" data-empty="ORS footer placeholder"></div>
+      <input type="file" accept="image/*" id="imgOrsFooter"><div class="bar" style="margin-top:6px"><span id="stOrsFooter" class="warn" style="color:var(--mut)"></span><button class="b" id="rmOrsFooter" type="button">Remove</button></div></div>
+  </div></div>
+  <div class="card"><h2>Backup (your data lives only in this browser)</h2><div class="bar">
+    <button class="b" id="bkExport" type="button">Download backup</button>
+    <label class="b" style="margin:0;cursor:pointer;color:var(--ink)">Restore backup<input type="file" accept=".json" id="bkImport" style="display:none"></label>
+  </div></div>
+</section>
+</main>
+<div id="dd"></div>
+<div id="pv" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(15,20,26,.7);flex-direction:column;align-items:center;padding:14px">
+  <div style="width:min(900px,100%);display:flex;gap:8px;align-items:center;margin-bottom:10px">
+    <strong style="color:#fff;flex:1" id="pvName">PDF preview</strong>
+    <button class="b p" id="pvDl" type="button">Download PDF</button>
+    <button class="b" id="pvClose" type="button">Close</button>
+  </div>
+  <iframe id="pvFrame" title="PDF preview" style="width:min(900px,100%);flex:1;border:0;border-radius:8px;background:#fff"></iframe>
+</div>
+<div id="toast"></div>
+
+<script>
+/**
+ * Chart of accounts lookup table: [UACS code, Account title, normal balance D/C].
+ * Generated from Accounts.csv (1323 accounts). To add or fix an account, edit a row
+ * or append a new [code, title, 'D' or 'C'] line before the closing bracket.
+ */
+const ACCOUNTS = [
+  ["1-00-00-000-00", "ASSETS", "D"],
+  ["1-01-00-000-00", "Cash and Cash Equivalents", "D"],
+  ["1-01-01-000-00", "Cash on Hand", "D"],
+  ["1-01-01-010-00", "Cash - Collecting Officers", "D"],
+  ["1-01-01-020-00", "Petty Cash", "D"],
+  ["1-01-02-000-00", "Cash in Bank - Local Currency", "D"],
+  ["1-01-02-010-00", "Cash in Bank - Local Currency, Bangko Sentral ng Pilipinas", "D"],
+  ["1-01-02-020-00", "Cash in Bank - Local Currency, Current Account", "D"],
+  ["1-01-02-020-01", "Cash in Bank - Local Currency, Current Account- Allied Bank", "D"],
+  ["1-01-02-020-02", "Cash in Bank - Local Currency, Current Account- Amanah Bank", "D"],
+  ["1-01-02-020-03", "Cash in Bank - Local Currency, Current Account- Asia United Bank Corporation", "D"],
+  ["1-01-02-020-04", "Cash in Bank - Local Currency, Current Account- Australia and New Zealand Bank", "D"],
+  ["1-01-02-020-05", "Cash in Bank - Local Currency, Current Account- Banco de Oro (BDO)", "D"],
+  ["1-01-02-020-06", "Cash in Bank - Local Currency, Current Account- Bangkok Bank", "D"],
+  ["1-01-02-020-07", "Cash in Bank - Local Currency, Current Account- Bangkok Bank Public Company Limited", "D"],
+  ["1-01-02-020-08", "Cash in Bank - Local Currency, Current Account- Bank of China", "D"],
+  ["1-01-02-020-09", "Cash in Bank - Local Currency, Current Account- Bank of Commerce", "D"],
+  ["1-01-02-020-10", "Cash in Bank - Local Currency, Current Account- Bank of the Philippine Islands (BPI)", "D"],
+  ["1-01-02-020-11", "Cash in Bank - Local Currency, Current Account- Bank of Tokyo", "D"],
+  ["1-01-02-020-12", "Cash in Bank - Local Currency, Current Account- China Banking Corporation", "D"],
+  ["1-01-02-020-13", "Cash in Bank - Local Currency, Current Account- Chinatrust Commercial Bank", "D"],
+  ["1-01-02-020-14", "Cash in Bank - Local Currency, Current Account- Citibank", "D"],
+  ["1-01-02-020-15", "Cash in Bank - Local Currency, Current Account- Deutsche Bank AG", "D"],
+  ["1-01-02-020-16", "Cash in Bank - Local Currency, Current Account- Development Bank of the Philippines (DBP)", "D"],
+  ["1-01-02-020-17", "Cash in Bank - Local Currency, Current Account- East-West Banking Corporation", "D"],
+  ["1-01-02-020-18", "Cash in Bank - Local Currency, Current Account- Equitable PCI Bank", "D"],
+  ["1-01-02-020-19", "Cash in Bank - Local Currency, Current Account- First Consolidated Bank (FCB)", "D"],
+  ["1-01-02-020-20", "Cash in Bank - Local Currency, Current Account- Fuji-Mizuho Bank", "D"],
+  ["1-01-02-020-21", "Cash in Bank - Local Currency, Current Account- Hong Kong and Shanghai Banking Corp", "D"],
+  ["1-01-02-020-22", "Cash in Bank - Local Currency, Current Account- International Commercial Bank of China", "D"],
+  ["1-01-02-020-23", "Cash in Bank - Local Currency, Current Account- International Exchange Bank", "D"],
+  ["1-01-02-020-24", "Cash in Bank - Local Currency, Current Account- Land Bank of the Philippines ( LBP)", "D"],
+  ["1-01-02-020-25", "Cash in Bank - Local Currency, Current Account- Maybank Philippines", "D"],
+  ["1-01-02-020-26", "Cash in Bank - Local Currency, Current Account- Metropolitan and Trust Co", "D"],
+  ["1-01-02-020-27", "Cash in Bank - Local Currency, Current Account- Philippine Bank of Communication", "D"],
+  ["1-01-02-020-28", "Cash in Bank - Local Currency, Current Account- Philippine Business Bank", "D"],
+  ["1-01-02-020-29", "Cash in Bank - Local Currency, Current Account- Philippine National Bank (PNB)", "D"],
+  ["1-01-02-020-30", "Cash in Bank - Local Currency, Current Account- Philippine Postal Savings Bank (PPSB)", "D"],
+  ["1-01-02-020-31", "Cash in Bank - Local Currency, Current Account- Philippine Trust Company", "D"],
+  ["1-01-02-020-32", "Cash in Bank - Local Currency, Current Account- Philippine Veterans Bank (PVB)", "D"],
+  ["1-01-02-020-33", "Cash in Bank - Local Currency, Current Account- Rizal Commercial Banking Corp (RCBC)", "D"],
+  ["1-01-02-020-34", "Cash in Bank - Local Currency, Current Account- Robinsons Bank", "D"],
+  ["1-01-02-020-35", "Cash in Bank - Local Currency, Current Account- Security Bank", "D"],
+  ["1-01-02-020-36", "Cash in Bank - Local Currency, Current Account- Standard Chartered Bank", "D"],
+  ["1-01-02-020-37", "Cash in Bank - Local Currency, Current Account- Sterling Bank of Asia", "D"],
+  ["1-01-02-020-38", "Cash in Bank - Local Currency, Current Account- Union Bank of the Philippines", "D"],
+  ["1-01-02-020-39", "Cash in Bank - Local Currency, Current Account- United Coconut Planters Bank (UCPB)", "D"],
+  ["1-01-02-030-00", "Cash in Bank - Local Currency, Savings Account", "D"],
+  ["1-01-02-030-01", "Cash in Bank - Local Currency, Savings Accounts- LBP", "D"],
+  ["1-01-02-030-02", "Cash in Bank - Local Currency, Savings Accounts- DBP", "D"],
+  ["1-01-02-030-03", "Cash in Bank - Local Currency, Savings Accounts- PVB", "D"],
+  ["1-01-02-030-04", "Cash in Bank - Local Currency, Savings Accounts- PNB", "D"],
+  ["1-01-02-030-05", "Cash in Bank - Local Currency, Savings Accounts- Philippine Amanah Bank (PAB)", "D"],
+  ["1-01-02-030-06", "Cash in Bank - Local Currency, Savings Accounts- Philippine Post Savings Bank (PPSB)", "D"],
+  ["1-01-02-030-07", "Cash in Bank - Local Currency, Savings Accounts- UCPB", "D"],
+  ["1-01-02-040-00", "Cash in Bank -Local Currency, Time Deposits", "D"],
+  ["1-01-02-040-01", "Cash in Bank - Local Currency, Time Deposits- LBP", "D"],
+  ["1-01-02-040-02", "Cash in Bank - Local Currency, Time Deposits- DBP", "D"],
+  ["1-01-02-040-03", "Cash in Bank - Local Currency, Time Deposits- PVB", "D"],
+  ["1-01-02-040-04", "Cash in Bank - Local Currency, Time Deposits- PNB", "D"],
+  ["1-01-02-040-05", "Cash in Bank - Local Currency, Time Deposits- UCPB", "D"],
+  ["1-01-03-000-00", "Cash in Bank - Foreign Currency", "D"],
+  ["1-01-03-010-00", "Cash in Bank - Foreign Currency, Bangko Sentral ng Pilipinas", "D"],
+  ["1-01-03-020-00", "Cash in Bank - Foreign Currency, Current Account", "D"],
+  ["1-01-03-030-00", "Cash in Bank - Foreign Currency, Savings Account", "D"],
+  ["1-01-03-030-01", "Cash in Bank - Foreign Currency, Savings Account- LBP", "D"],
+  ["1-01-03-030-02", "Cash in Bank - Foreign Currency, Savings Account- DBP", "D"],
+  ["1-01-03-030-03", "Cash in Bank - Foreign Currency, Savings Account- PNB", "D"],
+  ["1-01-03-030-04", "Cash in Bank - Foreign Currency, Savings Account- UCPB", "D"],
+  ["1-01-03-040-00", "Cash in Bank - Foreign Currency, Time Deposits", "D"],
+  ["1-01-03-040-01", "Cash in Bank - Foreign Currency, Time Deposits- LBP", "D"],
+  ["1-01-03-040-02", "Cash in Bank - Foreign Currency, Time Deposits- DBP", "D"],
+  ["1-01-03-040-03", "Cash in Bank - Foreign Currency, Time Deposits- PNB", "D"],
+  ["1-01-03-040-04", "Cash in Bank - Foreign Currency, Time Deposits- UCPB", "D"],
+  ["1-01-04-000-00", "Treasury/Agency Cash Accounts", "D"],
+  ["1-01-04-010-00", "Cash - Treasury/Agency Deposit, Regular", "D"],
+  ["1-01-04-030-00", "Cash - Treasury/Agency Deposits, Trust", "D"],
+  ["1-01-04-040-00", "Cash - Modified Disbursement System (MDS), Regular", "D"],
+  ["1-01-04-050-00", "Cash - Modified Disbursement System (MDS), Special", "D"],
+  ["1-01-04-060-00", "Cash - Modified Disbursement System (MDS), Trust", "D"],
+  ["1-01-04-070-00", "Cash-Tax Remittance Advice", "D"],
+  ["1-01-04-080-00", "Cash-Constructive Income Remittance", "D"],
+  ["1-01-05-000-00", "Cash Equivalents", "D"],
+  ["1-02-00-000-00", "Investments", "D"],
+  ["1-02-01-000-00", "Financial Assets at Fair Value Through Surplus or Deficit", "D"],
+  ["1-02-01-010-00", "Financial Assets Held for Trading", "D"],
+  ["1-02-01-020-00", "Financial Assets Designated at Fair Value Through Surplus or Deficit", "D"],
+  ["1-02-01-030-00", "Derivative Financial Assets Held for Trading", "D"],
+  ["1-02-01-040-00", "Derivative Financial Assets Designated at Fair Value Through Surplus or Deficit", "D"],
+  ["1-02-02-000-00", "Financial Assets - Held to Maturity", "D"],
+  ["1-02-02-010-00", "Investments in Treasury Bills - Local", "D"],
+  ["1-02-02-011-00", "Allowance for Impairment -Investments in Treasury Bills - Local", "C"],
+  ["1-02-02-020-00", "Investments in Treasury Bills - Foreign", "D"],
+  ["1-02-02-021-00", "Allowance for Impairment -Investments in Treasury Bills - Foreign", "C"],
+  ["1-02-02-030-00", "Investments in Treasury Bonds - Local", "D"],
+  ["1-02-02-031-00", "Allowance for Impairment -Investments in Bonds - Local", "C"],
+  ["1-02-02-040-00", "Investments in Treasury Bonds - Foreign", "D"],
+  ["1-02-02-041-00", "Allowance for Impairment -Investments in Bonds - Foreign", "C"],
+  ["1-02-03-000-00", "Financial Assets - Others", "D"],
+  ["1-02-03-010-00", "Investments in Stocks", "D"],
+  ["1-02-03-020-00", "Investments in Bonds", "D"],
+  ["1-02-03-990-00", "Other Investments", "D"],
+  ["1-02-04-000-00", "Investments in GOCCs", "D"],
+  ["1-02-04-010-00", "Investments in GOCCs", "D"],
+  ["1-02-04-011-00", "Allowance for Impairment - Investments in GOCCs", "C"],
+  ["1-02-05-000-00", "Investments in Joint Venture", "D"],
+  ["1-02-05-010-00", "Investments in Joint Venture", "D"],
+  ["1-02-05-011-00", "Allowance for Impairment - Investments in Joint Venture", "C"],
+  ["1-02-06-000-00", "Investments in Associates", "D"],
+  ["1-02-06-010-00", "Investments in Associates", "D"],
+  ["1-02-06-011-00", "Allowance for Impairment - Investments in Associates", "C"],
+  ["1-02-07-000-00", "Sinking Fund", "D"],
+  ["1-02-07-010-00", "Sinking Fund", "D"],
+  ["1-03-00-000-00", "Receivables", "D"],
+  ["1-03-01-000-00", "Loans and Receivable Accounts", "D"],
+  ["1-03-01-010-00", "Accounts Receivable", "D"],
+  ["1-03-01-011-00", "Allowance for Impairment - Accounts Receivable", "C"],
+  ["1-03-01-020-00", "Notes Receivable", "D"],
+  ["1-03-01-021-00", "Allowance for Impairment - Notes Receivable", "C"],
+  ["1-03-01-030-00", "Loans Receivable - Government-Owned and/or Controlled Corporations", "D"],
+  ["1-03-01-031-00", "Controlled Corporations", "C"],
+  ["1-03-01-040-00", "Loans Receivable - Local Government Units", "D"],
+  ["1-03-01-041-00", "Allowance for Impairment - Loans Receivable - Local Government Units", "C"],
+  ["1-03-01-050-00", "Interests Receivable", "D"],
+  ["1-03-01-051-00", "Allowance for Impairment - Interest Receivable", "C"],
+  ["1-03-01-060-00", "Dividends Receivable", "D"],
+  ["1-03-01-990-00", "Loans Receivable - Others", "D"],
+  ["1-03-01-991-00", "Allowance for Impairment - Loans Receivable - Others", "C"],
+  ["1-03-02-000-00", "Lease Receivable", "D"],
+  ["1-03-02-010-00", "Operating Lease Receivable", "D"],
+  ["1-03-02-011-00", "Allowance for Impairment - Operating Lease Receivable", "C"],
+  ["1-03-02-020-00", "Finance Lease Receivable", "D"],
+  ["1-03-02-021-00", "Allowance for Impairment - Finance Lease Receivable", "C"],
+  ["1-03-03-000-00", "Inter-Agency Receivables", "D"],
+  ["1-03-03-010-00", "Due from National Government Agencies", "D"],
+  ["1-03-03-020-00", "Due from Government-Owned and/or Controlled Corporations", "D"],
+  ["1-03-03-030-00", "Due from Local Government Units", "D"],
+  ["1-03-03-040-00", "Due from Joint Venture", "D"],
+  ["1-03-04-000-00", "Intra-Agency Receivables", "D"],
+  ["1-03-04-010-00", "Due from Central Office", "D"],
+  ["1-03-04-020-00", "Due from Bureaus", "D"],
+  ["1-03-04-030-00", "Due from Regional Offices", "D"],
+  ["1-03-04-040-00", "Due from Operating Units", "D"],
+  ["1-03-05-000-00", "Other Receivables", "D"],
+  ["1-03-05-010-00", "Receivables - Disallowances/Charges", "D"],
+  ["1-03-05-020-00", "Due from Officers and Employees", "D"],
+  ["1-03-05-030-00", "Due from Non-Government Organizations/People's Organizations", "D"],
+  ["1-03-05-091-00", "Allowance for Impairment - Other Receivables", "C"],
+  ["1-03-05-990-00", "Other Receivables", "D"],
+  ["1-04-00-000-00", "Inventories", "D"],
+  ["1-04-01-000-00", "Inventory Held for sale", "D"],
+  ["1-04-01-010-00", "Merchandise Inventory", "D"],
+  ["1-04-01-010-01", "Supplies and Materials", "D"],
+  ["1-04-01-010-02", "Drugs and Medicines", "D"],
+  ["1-04-01-010-03", "Agricultural Produce", "D"],
+  ["1-04-01-010-04", "Ammunitions", "D"],
+  ["1-04-01-010-05", "Property and Equipment", "D"],
+  ["1-04-01-010-99", "Others", "D"],
+  ["1-04-02-000-00", "Inventory Held for Distribution", "D"],
+  ["1-04-02-010-00", "Food Supplies for Distribution", "D"],
+  ["1-04-02-020-00", "Welfare Goods for Distribution", "D"],
+  ["1-04-02-030-00", "Drugs and Medicines for Distribution", "D"],
+  ["1-04-02-040-00", "Medical, Dental and Laboratory Supplies for Distribution", "D"],
+  ["1-04-02-050-00", "Agricultural and Marine Supplies for Distribution", "D"],
+  ["1-04-02-060-00", "Agricultural Produce for Distribution", "D"],
+  ["1-04-02-070-00", "Textbooks and Instructional Materials for Distribution", "D"],
+  ["1-04-02-080-00", "Construction Materials for Distribution", "D"],
+  ["1-04-02-090-00", "Property and Equipment for Distribution", "D"],
+  ["1-04-02-990-00", "Other Supplies and Materials for Distribution", "D"],
+  ["1-04-03-000-00", "Inventory Held for Manufacturing", "D"],
+  ["1-04-03-010-00", "Raw Materials Inventory", "D"],
+  ["1-04-03-020-00", "Work-In-Process Inventory", "D"],
+  ["1-04-03-030-00", "Finished Goods Inventory", "D"],
+  ["1-04-04-000-00", "Inventory Held for Consumption", "D"],
+  ["1-04-04-010-00", "Office Supplies Inventory", "D"],
+  ["1-04-04-020-00", "Accountable Forms, Plates and Stickers Inventory", "D"],
+  ["1-04-04-030-00", "Non-Accountable Forms Inventory", "D"],
+  ["1-04-04-040-00", "Animal/Zoological Supplies Inventory", "D"],
+  ["1-04-04-050-00", "Food Supplies Inventory", "D"],
+  ["1-04-04-060-00", "Drugs and Medicines Inventory", "D"],
+  ["1-04-04-070-00", "Medical, Dental and Laboratory Supplies Inventory", "D"],
+  ["1-04-04-080-00", "Fuel, Oil and Lubricants Inventory", "D"],
+  ["1-04-04-090-00", "Agricultural and Marine Supplies Inventory", "D"],
+  ["1-04-04-100-00", "Textbooks and Instructional Materials Inventory", "D"],
+  ["1-04-04-110-00", "Military, Police and Traffic Supplies Inventory", "D"],
+  ["1-04-04-120-00", "Chemical and Filtering Supplies Inventory", "D"],
+  ["1-04-04-130-00", "Construction Materials Inventory", "D"],
+  ["1-04-04-990-00", "Other Supplies and Materials Inventory", "D"],
+  ["1-04-05-000-00", "Semi-Expendable Machinery and Equipment", "D"],
+  ["1-04-05-010-00", "Semi-Expendable Machinery", "D"],
+  ["1-04-05-020-00", "Semi-Expendable Office Equipment", "D"],
+  ["1-04-05-030-00", "Semi-Expendable Information and Communications Technology Equipment", "D"],
+  ["1-04-05-040-00", "Semi-Expendable Agricultural and Forestry Equipment", "D"],
+  ["1-04-05-050-00", "Semi-Expendable Marine and Fishery Equipment", "D"],
+  ["1-04-05-060-00", "Semi-Expendable Airport Equipment", "D"],
+  ["1-04-05-070-00", "Semi-Expendable Communications Equipment", "D"],
+  ["1-04-05-080-00", "Semi-Expendable Disaster Response and Rescue Equipment", "D"],
+  ["1-04-05-090-00", "Semi-Expendable Military, Police and Security Equipment", "D"],
+  ["1-04-05-100-00", "Semi-Expendable Medical Equipment", "D"],
+  ["1-04-05-110-00", "Semi-Expendable Printing Equipment", "D"],
+  ["1-04-05-120-00", "Semi-Expendable Sports Equipment", "D"],
+  ["1-04-05-130-00", "Semi-Expendable Technical and Scientific Equipment", "D"],
+  ["1-04-05-190-00", "Semi-Expendable Other Machinery and Equipment", "D"],
+  ["1-04-06-000-00", "Semi-Expendable Furniture, Fixtures and Books", "D"],
+  ["1-04-06-010-00", "Semi-Expendable Furniture and Fixtures", "D"],
+  ["1-04-06-020-00", "Semi-Expendable Books", "D"],
+  ["1-05-00-000-00", "Investment Property", "D"],
+  ["1-05-01-000-00", "Land and Buildings", "D"],
+  ["1-05-01-010-00", "Investment Property, Land", "D"],
+  ["1-05-01-011-00", "Accumulated Impairment Losses - Investment Property, Land", "C"],
+  ["1-05-01-020-00", "Investment Property, Buildings", "D"],
+  ["1-05-01-021-00", "Accumulated Depreciation - Investment Property, Buildings", "C"],
+  ["1-05-01-022-00", "Accumulated Impairment Losses - Investment Property, Buildings", "C"],
+  ["1-06-00-000-00", "Property, Plant And Equipment", "D"],
+  ["1-06-01-000-00", "Land", "D"],
+  ["1-06-01-010-00", "Land", "D"],
+  ["1-06-02-000-00", "Land Improvements", "D"],
+  ["1-06-02-010-00", "Land Improvements - Aquaculture Structures", "D"],
+  ["1-06-02-011-00", "Accumulated Depreciation - Land Improvements, Aquaculture Structures", "C"],
+  ["1-06-02-012-00", "Accumulated Impairment Losses - Land Improvements, Aquaculture Structures", "C"],
+  ["1-06-02-020-00", "Land Improvements, Reforestation Projects", "D"],
+  ["1-06-02-021-00", "Accumulated Impairment Losses - Land Improvements, Reforestation Projects", "C"],
+  ["1-06-02-990-00", "Other Land Improvements", "D"],
+  ["1-06-02-991-00", "Accumulated Depreciation - Other Land Improvements", "C"],
+  ["1-06-02-992-00", "Accumulated Impairment Losses - Other Land Improvements", "C"],
+  ["1-06-03-000-00", "Infrastructure Assets", "D"],
+  ["1-06-03-010-00", "Road Networks", "D"],
+  ["1-06-03-011-00", "Accumulated Depreciation - Road Networks", "C"],
+  ["1-06-03-012-00", "Accumulated Impairment Losses - Road Networks", "C"],
+  ["1-06-03-020-00", "Flood Control Systems", "D"],
+  ["1-06-03-021-00", "Accumulated Depreciation - Flood Control Systems", "C"],
+  ["1-06-03-022-00", "Accumulated Impairment Losses - Flood Control Systems", "C"],
+  ["1-06-03-030-00", "Sewer Systems", "D"],
+  ["1-06-03-031-00", "Accumulated Depreciation - Sewer Systems", "C"],
+  ["1-06-03-032-00", "Accumulated Impairment Losses - Sewer Systems", "C"],
+  ["1-06-03-040-00", "Water Supply Systems", "D"],
+  ["1-06-03-041-00", "Accumulated Depreciation - Water Supply Systems", "C"],
+  ["1-06-03-042-00", "Accumulated Impairment Losses - Water Supply Systems", "C"],
+  ["1-06-03-050-00", "Power Supply Systems", "D"],
+  ["1-06-03-051-00", "Accumulated Depreciation - Power Supply Systems", "C"],
+  ["1-06-03-052-00", "Accumulated Impairment Losses - Power Supply Systems", "C"],
+  ["1-06-03-060-00", "Communication Networks", "D"],
+  ["1-06-03-061-00", "Accumulated Depreciation - Communication Networks", "C"],
+  ["1-06-03-062-00", "Accumulated Impairment Losses - Communication Networks", "C"],
+  ["1-06-03-070-00", "Seaport Systems", "D"],
+  ["1-06-03-071-00", "Accumulated Depreciation - Seaport Systems", "C"],
+  ["1-06-03-072-00", "Accumulated Impairment Losses - Seaport Systems", "C"],
+  ["1-06-03-080-00", "Airport Systems", "D"],
+  ["1-06-03-081-00", "Accumulated Depreciation - Airport Systems", "C"],
+  ["1-06-03-082-00", "Accumulated Impairment Losses - Airport Systems", "C"],
+  ["1-06-03-090-00", "Parks, Plazas and Monuments", "D"],
+  ["1-06-03-091-00", "Accumulated Depreciation - Parks, Plazas and Monuments", "C"],
+  ["1-06-03-092-00", "Accumulated Impairment Losses - Parks, Plazas and Monuments", "C"],
+  ["1-06-03-990-00", "Other Infrastructure Assets", "D"],
+  ["1-06-03-991-00", "Accumulated Depreciation - Other Infrastructure Assets", "C"],
+  ["1-06-03-992-00", "Accumulated Impairment Losses - Other Infrastructure Assets", "C"],
+  ["1-06-04-000-00", "Buildings and Other Structures", "D"],
+  ["1-06-04-010-00", "Buildings", "D"],
+  ["1-06-04-011-00", "Accumulated Depreciation - Buildings", "C"],
+  ["1-06-04-012-00", "Accumulated Impairment Losses - Buildings", "C"],
+  ["1-06-04-020-00", "School Buildings", "D"],
+  ["1-06-04-021-00", "Accumulated Depreciation - School Buildings", "C"],
+  ["1-06-04-022-00", "Accumulated Impairment Losses - School Buildings", "C"],
+  ["1-06-04-030-00", "Hospitals and Health Centers", "D"],
+  ["1-06-04-031-00", "Accumulated Depreciation - Hospitals and Health Centers", "C"],
+  ["1-06-04-032-00", "Accumulated Impairment Losses - Hospitals and Health Centers", "C"],
+  ["1-06-04-040-00", "Markets", "D"],
+  ["1-06-04-041-00", "Accumulated Depreciation - Markets", "C"],
+  ["1-06-04-042-00", "Accumulated Impairment Losses - Markets", "C"],
+  ["1-06-04-050-00", "Slaughterhouses", "D"],
+  ["1-06-04-051-00", "Accumulated Depreciation - Slaughterhouses", "C"],
+  ["1-06-04-052-00", "Accumulated Impairment Losses - Slaughterhouses", "C"],
+  ["1-06-04-060-00", "Hostels and Dormitories", "D"],
+  ["1-06-04-061-00", "Accumulated Depreciation - Hostels and Dormitories", "C"],
+  ["1-06-04-062-00", "Accumulated Impairment Losses - Hostels and Dormitories", "C"],
+  ["1-06-04-990-00", "Other Structures", "D"],
+  ["1-06-04-991-00", "Accumulated Depreciation - Other Structures", "C"],
+  ["1-06-04-992-00", "Accumulated Impairment Losses - Other Structures", "C"],
+  ["1-06-05-000-00", "Machinery and Equipment", "D"],
+  ["1-06-05-010-00", "Machinery", "D"],
+  ["1-06-05-011-00", "Accumulated Depreciation - Machinery", "C"],
+  ["1-06-05-012-00", "Accumulated Impairment Losses - Machinery", "C"],
+  ["1-06-05-020-00", "Office Equipment", "D"],
+  ["1-06-05-021-00", "Accumulated Depreciation - Office Equipment", "C"],
+  ["1-06-05-022-00", "Accumulated Impairment Losses - Office Equipment", "C"],
+  ["1-06-05-030-00", "Information and Communication Technology Equipment", "D"],
+  ["1-06-05-031-00", "Accumulated Depreciation - Information and Communication Technology Equipment", "C"],
+  ["1-06-05-032-00", "Accumulated Impairment Losses-Information and Communication Technology Equipment", "C"],
+  ["1-06-05-040-00", "Agricultural and Forestry Equipment", "D"],
+  ["1-06-05-041-00", "Accumulated Depreciation - Agricultural and Forestry Equipment", "C"],
+  ["1-06-05-042-00", "Accumulated Impairment Losses - Agricultural and Forestry Equipment", "C"],
+  ["1-06-05-050-00", "Marine and Fishery Equipment", "D"],
+  ["1-06-05-051-00", "Accumulated Depreciation - Marine and Fishery Equipment", "C"],
+  ["1-06-05-052-00", "Accumulated Impairment Losses - Marine and Fishery Equipment", "C"],
+  ["1-06-05-060-00", "Airport Equipment", "D"],
+  ["1-06-05-061-00", "Accumulated Depreciation - Airport Equipment", "C"],
+  ["1-06-05-062-00", "Accumulated Impairment Losses - Airport Equipment", "C"],
+  ["1-06-05-070-00", "Communication Equipment", "D"],
+  ["1-06-05-071-00", "Accumulated Depreciation - Communication Equipment", "C"],
+  ["1-06-05-072-00", "Accumulated Impairment Losses - Communication Equipment", "C"],
+  ["1-06-05-080-00", "Construction and Heavy Equipment", "D"],
+  ["1-06-05-081-00", "Accumulated Depreciation - Construction and Heavy Equipment", "C"],
+  ["1-06-05-082-00", "Accumulated Impairment Losses - Construction and Heavy Equipment", "C"],
+  ["1-06-05-090-00", "Disaster Response and Rescue Equipment", "D"],
+  ["1-06-05-090-01", "Firefighting Equipment and Accessories", "D"],
+  ["1-06-05-090-02", "Flood and Rescue Equipment", "D"],
+  ["1-06-05-090-03", "Earthquake Rescue Equipment", "D"],
+  ["1-06-05-090-04", "Volcanic Eruption Rescue Equipment", "D"],
+  ["1-06-05-090-05", "Landslide Rescue Equipment", "D"],
+  ["1-06-05-091-00", "Accumulated Depreciation - Disaster Response and Rescue Equipment", "C"],
+  ["1-06-05-091-01", "Accumulated Depreciation - Firefighting Equipment and Accessories", "C"],
+  ["1-06-05-092-00", "Accumulated Impairment Losses - Disaster Response and Rescue Equipment", "C"],
+  ["1-06-05-100-00", "Military, Police and Security Equipment", "D"],
+  ["1-06-05-101-00", "Accumulated Depreciation - Military, Police and Security Equipment", "C"],
+  ["1-06-05-102-00", "Accumulated Impairment Losses - Military, Police and Security Equipment", "C"],
+  ["1-06-05-110-00", "Medical Equipment", "D"],
+  ["1-06-05-111-00", "Accumulated Depreciation - Medical Equipment", "C"],
+  ["1-06-05-112-00", "Accumulated Impairment Losses - Medical Equipment", "C"],
+  ["1-06-05-120-00", "Printing Equipment", "D"],
+  ["1-06-05-121-00", "Accumulated Depreciation - Printing Equipment", "C"],
+  ["1-06-05-122-00", "Accumulated Impairment Losses - Printing Equipment", "C"],
+  ["1-06-05-130-00", "Sports Equipment", "D"],
+  ["1-06-05-131-00", "Accumulated Depreciation - Sports Equipment", "C"],
+  ["1-06-05-132-00", "Accumulated Impairment Losses - Sports Equipment", "C"],
+  ["1-06-05-140-00", "Technical and Scientific Equipment", "D"],
+  ["1-06-05-141-00", "Accumulated Depreciation - Technical and Scientific Equipment", "C"],
+  ["1-06-05-142-00", "Accumulated Impairment Losses - Technical and Scientific Equipment", "C"],
+  ["1-06-05-990-00", "Other Machinery and Equipment", "D"],
+  ["1-06-05-991-00", "Accumulated Depreciation - Other Machinery and Equipment", "C"],
+  ["1-06-05-992-00", "Accumulated Impairment Losses - Other Machinery and Equipment", "C"],
+  ["1-06-06-000-00", "Transportation Equipment", "D"],
+  ["1-06-06-010-00", "Motor Vehicles", "D"],
+  ["1-06-06-011-00", "Accumulated Depreciation - Motor Vehicles", "C"],
+  ["1-06-06-012-00", "Accumulated Impairment Losses - Motor Vehicles", "C"],
+  ["1-06-06-020-00", "Trains", "D"],
+  ["1-06-06-021-00", "Accumulated Depreciation - Trains", "C"],
+  ["1-06-06-022-00", "Accumulated Impairment Losses - Trains", "C"],
+  ["1-06-06-030-00", "Aircrafts and Aircrafts Ground Equipment", "D"],
+  ["1-06-06-031-00", "Accumulated Depreciation - Aircrafts and Aircrafts Ground Equipment", "C"],
+  ["1-06-06-032-00", "Accumulated Impairment Losses - Aircrafts and Aircrafts Ground Equipment", "C"],
+  ["1-06-06-040-00", "Watercrafts", "D"],
+  ["1-06-06-041-00", "Accumulated Depreciation - Watercrafts", "C"],
+  ["1-06-06-042-00", "Accumulated Impairment Losses - Watercrafts", "C"],
+  ["1-06-06-990-00", "Other Transportation Equipment", "D"],
+  ["1-06-06-991-00", "Accumulated Depreciation - Other Transportation Equipment", "C"],
+  ["1-06-06-992-00", "Accumulated Impairment Losses - Other Transportation Equipment", "C"],
+  ["1-06-07-000-00", "Furniture, Fixtures and Books", "D"],
+  ["1-06-07-010-00", "Furniture and Fixtures", "D"],
+  ["1-06-07-011-00", "Accumulated Depreciation - Furniture and Fixtures", "C"],
+  ["1-06-07-012-00", "Accumulated Impairment Losses - Furniture and Fixtures", "C"],
+  ["1-06-07-020-00", "Books", "D"],
+  ["1-06-07-021-00", "Accumulated Depreciation - Books", "C"],
+  ["1-06-07-022-00", "Accumulated Impairment Losses - Books", "C"],
+  ["1-06-08-000-00", "Leased Assets", "D"],
+  ["1-06-08-010-00", "Leased Assets, Land", "D"],
+  ["1-06-08-020-00", "Leased Assets, Buildings and Other Structures", "D"],
+  ["1-06-08-021-00", "Accumulated Depreciation - Leased Assets, Buildings and Other Structures", "C"],
+  ["1-06-08-022-00", "Structures", "C"],
+  ["1-06-08-030-00", "Leased Assets, Machinery and Equipment", "D"],
+  ["1-06-08-031-00", "Accumulated Depreciation - Leased Assets, Machinery and Equipment", "C"],
+  ["1-06-08-032-00", "Accumulated Impairment Losses - Leased Assets, Machinery and Equipment", "C"],
+  ["1-06-08-040-00", "Leased Assets, Transportation Equipment", "D"],
+  ["1-06-08-041-00", "Accumulated Depreciation - Leased Assets, Transportation Equipment", "C"],
+  ["1-06-08-042-00", "Accumulated Impairment Losses - Leased Assets, Transportation Equipment", "C"],
+  ["1-06-08-990-00", "Other Leased Assets", "D"],
+  ["1-06-08-991-00", "Accumulated Depreciation - Other Leased Assets", "C"],
+  ["1-06-08-992-00", "Accumulated Impairment Losses - Other Leased Assets", "C"],
+  ["1-06-09-000-00", "Leased Assets Improvements", "D"],
+  ["1-06-09-010-00", "Leased Assets Improvements, Land", "D"],
+  ["1-06-09-011-00", "Accumulated Depreciation - Leased Assets Improvements, Land", "C"],
+  ["1-06-09-012-00", "Accumulated Impairment Losses - Leased Assets Improvements, Land", "C"],
+  ["1-06-09-020-00", "Leased Assets Improvements, Buildings", "D"],
+  ["1-06-09-021-00", "Accumulated Depreciation - Leased Assets Improvements, Buildings", "C"],
+  ["1-06-09-022-00", "Accumulated Impairment Losses - Leased Assets Improvements, Buildings", "C"],
+  ["1-06-09-990-00", "Other Leased Assets Improvements", "D"],
+  ["1-06-09-991-00", "Accumulated Depreciation - Other Leased Assets Improvements", "C"],
+  ["1-06-09-992-00", "Accumulated Impairment Losses - Other Leased Assets Improvements", "C"],
+  ["1-06-10-010-00", "Construction in Progress - Land Improvements", "D"],
+  ["1-06-10-020-00", "Construction in Progress - Infrastructure Assets", "D"],
+  ["1-06-10-030-00", "Construction in Progress - Buildings and Other Structures", "D"],
+  ["1-06-10-040-00", "Construction in Progress - Leased Assets", "D"],
+  ["1-06-10-050-00", "Construction in Progress - Leased Assets Improvements", "D"],
+  ["1-06-11-000-00", "Heritage Assets", "D"],
+  ["1-06-11-010-00", "Historical Buildings", "D"],
+  ["1-06-11-011-00", "Accumulated Depreciation - Historical Buildings", "C"],
+  ["1-06-11-012-00", "Accumulated Impairment Losses - Historical Buildings", "C"],
+  ["1-06-11-020-00", "Works of Art and Archeological Specimens", "D"],
+  ["1-06-11-021-00", "Accumulated Depreciation - Works of Arts and Archeological Specimens", "C"],
+  ["1-06-11-022-00", "Accumulated Impairment Losses - Works of Arts and Archeological Specimens", "C"],
+  ["1-06-11-990-00", "Other Heritage Assets", "D"],
+  ["1-06-11-991-00", "Accumulated Depreciation - Other Heritage Assets", "C"],
+  ["1-06-11-992-00", "Accumulated Impairment Losses - Other Heritage Assets", "C"],
+  ["1-06-12-990-00", "Other Service Concession Assets", "D"],
+  ["1-06-12-991-00", "Accumulated Depreciation - Other Service Concession Assets", "C"],
+  ["1-06-12-992-00", "Accumulated Impairment Losses - Other Service Concession Assets", "C"],
+  ["1-06-99-000-00", "Other Property, Plant and Equipment", "D"],
+  ["1-06-99-010-00", "Work/Zoo Animals", "D"],
+  ["1-06-99-011-00", "Accumulated Depreciation - Work/Zoo Animals", "C"],
+  ["1-06-99-012-00", "Accumulated Impairment Losses - Work/Zoo Animals", "C"],
+  ["1-06-99-990-00", "Other Property, Plant and Equipment", "D"],
+  ["1-06-99-991-00", "Accumulated Depreciation - Other Property, Plant and Equipment", "C"],
+  ["1-06-99-992-00", "Accumulated Impairment Losses - Other Property, Plant and Equipment", "C"],
+  ["1-07-00-000-00", "Biological Assets", "D"],
+  ["1-07-01-000-00", "Bearer Biological Assets", "D"],
+  ["1-07-01-010-00", "Breeding Stocks", "D"],
+  ["1-07-01-011-00", "Accumulated Impairment Losses - Breeding Stocks", "C"],
+  ["1-07-01-020-00", "Livestock", "D"],
+  ["1-07-01-021-00", "Accumulated Impairment Losses - Livestock", "C"],
+  ["1-07-01-030-00", "Trees, Plants and Crops", "D"],
+  ["1-07-01-031-00", "Accumulated Impairment Losses - Trees, Plants and Crops", "C"],
+  ["1-07-01-040-00", "Aquaculture", "D"],
+  ["1-07-01-041-00", "Accumulated Impairment Losses - Aquaculture", "C"],
+  ["1-07-02-000-00", "Consumable Biological Assets", "D"],
+  ["1-07-02-010-00", "Livestock Held for Consumption/Sale/Distribution", "D"],
+  ["1-07-02-011-00", "Consumption/Sale/Distribution", "C"],
+  ["1-07-02-020-00", "Trees, Plants and Crops Held for Consumption/Sale/Distribution", "D"],
+  ["1-07-02-021-00", "Consumption/Sale/Distribution", "C"],
+  ["1-07-02-030-00", "Agricultural Produce Held for Consumption/Sale/Distribution", "D"],
+  ["1-07-02-031-00", "Consumption/Sale/Distribution", "C"],
+  ["1-07-02-040-00", "Aquaculture", "D"],
+  ["1-07-02-041-00", "Accumulated Impairment Losses - Aquaculture", "C"],
+  ["1-08-00-000-00", "Intangible Assets", "D"],
+  ["1-08-01-000-00", "Intangible Assets", "D"],
+  ["1-08-01-010-00", "Patents/Copyrights", "D"],
+  ["1-08-01-011-00", "Accumulated Amortization - Patents/Copyrights", "C"],
+  ["1-08-01-020-00", "Computer Software", "D"],
+  ["1-08-01-021-00", "Accumulated Amortization - Computer Software", "C"],
+  ["1-99-00-000-00", "Other Assets", "D"],
+  ["1-99-01-000-00", "Advances", "D"],
+  ["1-99-01-010-00", "Advances for Operating Expenses", "D"],
+  ["1-99-01-020-00", "Advances for Payroll", "D"],
+  ["1-99-01-030-00", "Advances to Special Disbursing Officer", "D"],
+  ["1-99-01-040-00", "Advances to Officers and Employees", "D"],
+  ["1-99-02-000-00", "Prepayments", "D"],
+  ["1-99-02-010-00", "Advances to Contractors", "D"],
+  ["1-99-02-020-00", "Prepaid Rent", "D"],
+  ["1-99-02-030-00", "Prepaid Registration", "D"],
+  ["1-99-02-040-00", "Prepaid Interest", "D"],
+  ["1-99-02-050-00", "Prepaid Insurance", "D"],
+  ["1-99-02-990-00", "Other Prepayments", "D"],
+  ["1-99-03-000-00", "Deposits", "D"],
+  ["1-99-03-010-00", "Deposits on Letters of Credit", "D"],
+  ["1-99-03-020-00", "Guaranty Deposits", "D"],
+  ["1-99-03-990-00", "Other Deposits", "D"],
+  ["1-99-99-000-00", "Other Assets", "D"],
+  ["1-99-99-010-00", "Acquired Assets", "D"],
+  ["1-99-99-011-00", "Accumulated Impairment Losses - Acquired Assets", "C"],
+  ["1-99-99-020-00", "Foreclosed Property/Assets", "D"],
+  ["1-99-99-021-00", "Accumulated Impairment Losses - Foreclosed Property/Assets", "C"],
+  ["1-99-99-030-00", "Forfeited Property/Assets", "D"],
+  ["1-99-99-031-00", "Accumulated Impairment Losses - Forfeited Property/Assets", "C"],
+  ["1-99-99-040-00", "Confiscated Property/Assets", "D"],
+  ["1-99-99-041-00", "Accumulated Impairment Losses - Confiscated Property/Assets", "C"],
+  ["1-99-99-050-00", "Abandoned /Surrendered Property/Assets", "D"],
+  ["1-99-99-051-00", "Accumulated Impairment Losses - Abandoned Property/Assets", "C"],
+  ["1-99-99-990-00", "Other Assets", "D"],
+  ["1-99-99-991-00", "Accumulated Impairment Losses - Other Assets", "C"],
+  ["2-00-00-000-00", "LIABILITIES", "C"],
+  ["2-01-00-000-00", "Financial Liabilities", "C"],
+  ["2-01-01-000-00", "Payables", "C"],
+  ["2-01-01-010-00", "Accounts Payable", "C"],
+  ["2-01-01-020-00", "Due to Officers and Employees", "C"],
+  ["2-01-01-030-00", "Internal Revenue Allotment Payable", "C"],
+  ["2-01-01-040-00", "Notes Payable", "C"],
+  ["2-01-01-050-00", "Interest Payable", "C"],
+  ["2-01-01-060-00", "Operating Lease Payable", "C"],
+  ["2-01-01-070-00", "Finance Lease Payable", "C"],
+  ["2-01-01-080-00", "Awards and Rewards Payable", "C"],
+  ["2-01-02-000-00", "Bills/Bonds/Loans Payable", "C"],
+  ["2-01-02-010-00", "Treasury Bills Payable", "C"],
+  ["2-01-02-020-00", "Bonds Payable - Domestic", "C"],
+  ["2-01-02-021-00", "Discount on Bonds Payable - Domestic", "C"],
+  ["2-01-02-022-00", "Premium on Bonds Payable - Domestic", "C"],
+  ["2-01-02-030-00", "Bonds Payable - Foreign", "C"],
+  ["2-01-02-031-00", "Discount on Bonds Payable - Foreign", "C"],
+  ["2-01-02-032-00", "Premium on Bonds Payable - Foreign", "C"],
+  ["2-01-02-040-00", "Loans Payable - Domestic", "C"],
+  ["2-01-02-050-00", "Loans Payable - Foreign", "C"],
+  ["2-02-00-000-00", "Inter-Agency Payables", "C"],
+  ["2-02-01-000-00", "Inter-Agency Payables", "C"],
+  ["2-02-01-010-00", "Due to BIR", "C"],
+  ["2-02-01-020-00", "Due to GSIS", "C"],
+  ["2-02-01-020-01", "Life and Retirement Premium", "C"],
+  ["2-02-01-020-02", "ECC", "C"],
+  ["2-02-01-020-03", "Salary Loan", "C"],
+  ["2-02-01-020-04", "Policy Loan", "C"],
+  ["2-02-01-020-05", "Optional Insurance Premium", "C"],
+  ["2-02-01-020-06", "Pre-Need Accounts", "C"],
+  ["2-02-01-020-99", "Other Loans", "C"],
+  ["2-02-01-030-00", "Due to Pag-IBIG", "C"],
+  ["2-02-01-030-01", "Pag-IBIG Premium", "C"],
+  ["2-02-01-030-02", "Pag-IBIG Multi-Purpose Loan", "C"],
+  ["2-02-01-030-03", "Pag-IBIG Housing Loan", "C"],
+  ["2-02-01-030-04", "Pag-IBIG Others", "C"],
+  ["2-02-01-040-00", "Due to PhilHealth", "C"],
+  ["2-02-01-050-00", "Due to NGAs", "C"],
+  ["2-02-01-060-00", "Due to GOCCs", "C"],
+  ["2-02-01-070-00", "Due to LGUs", "C"],
+  ["2-02-01-080-00", "Due to Joint Venture", "C"],
+  ["2-03-00-000-00", "Intra-Agency Payables", "C"],
+  ["2-03-01-000-00", "Intra-Agency Payables", "C"],
+  ["2-03-01-010-00", "Due to Central Office", "C"],
+  ["2-03-01-020-00", "Due to Bureaus", "C"],
+  ["2-03-01-030-00", "Due to Regional Offices", "C"],
+  ["2-03-01-040-00", "Due to Operating Units", "C"],
+  ["2-04-00-000-00", "Trust Liabilities", "C"],
+  ["2-04-01-000-00", "Trust Liabilities", "C"],
+  ["2-04-01-010-00", "Trust Liabilities", "C"],
+  ["2-04-01-020-00", "Trust Liabilities - Disaster Risk Reduction and Management Fund", "C"],
+  ["2-04-01-030-00", "Bail Bonds Payable", "C"],
+  ["2-04-01-040-00", "Guaranty/Security Deposits Payable", "C"],
+  ["2-04-01-050-00", "Customers' Deposits Payable", "C"],
+  ["2-05-00-000-00", "Deferred Credits/Unearned Income", "C"],
+  ["2-05-01-000-00", "Deferred Credits", "C"],
+  ["2-05-01-010-00", "Deferred Finance Lease Revenue", "C"],
+  ["2-05-01-990-00", "Other Deferred Credits", "C"],
+  ["2-05-02-000-00", "Unearned Revenue", "C"],
+  ["2-05-02-010-00", "Unearned Revenue - Investment Property", "C"],
+  ["2-05-02-990-00", "Other Unearned Revenue", "C"],
+  ["2-06-00-000-00", "Provisions", "C"],
+  ["2-06-01-000-00", "Provisions", "C"],
+  ["2-06-01-010-00", "Pension Benefits Payable", "C"],
+  ["2-06-01-020-00", "Leave Benefits Payable", "C"],
+  ["2-06-01-030-00", "Retirement Gratuity Payable", "C"],
+  ["2-06-01-990-00", "Other Provisions", "C"],
+  ["2-99-00-000-00", "Other Payables", "C"],
+  ["2-99-99-000-00", "Other Payables", "C"],
+  ["2-99-99-990-00", "Other Payables", "C"],
+  ["3-00-00-000-00", "Equity", "C"],
+  ["3-01-00-000-00", "Government Equity", "C"],
+  ["3-01-01-000-00", "Government Equity", "C"],
+  ["3-01-01-010-00", "Accumulated Surplus/(Deficit)", "C"],
+  ["3-02-00-000-00", "Revaluation Surplus", "C"],
+  ["3-02-01-000-00", "Revaluation Surplus", "C"],
+  ["3-02-01-010-00", "Revaluation Surplus", "C"],
+  ["3-03-00-000-00", "Intermediate Accounts", "C"],
+  ["3-03-01-000-00", "Intermediate Accounts", "C"],
+  ["3-03-01-010-00", "Revenue and Expense Summary", "D"],
+  ["3-04-00-000-00", "Equity In Joint Venture", "C"],
+  ["3-04-01-000-00", "Equity in Joint Venture", "C"],
+  ["3-04-01-010-00", "Equity in Joint Venture", "C"],
+  ["4-00-00-000-00", "REVENUE", "C"],
+  ["4-01-00-000-00", "Tax Revenue", "C"],
+  ["4-01-01-000-00", "Tax Revenue - Individual and Corporation", "C"],
+  ["4-01-01-010-00", "Income Tax", "C"],
+  ["4-01-01-010-01", "Income Tax - Individual", "C"],
+  ["4-01-01-010-02", "Income Tax - Partnerships", "C"],
+  ["4-01-01-010-03", "Income Tax - Corporations", "C"],
+  ["4-01-01-020-00", "Professional Tax", "C"],
+  ["4-01-01-030-00", "Travel Tax", "C"],
+  ["4-01-01-040-00", "Immigration Tax", "C"],
+  ["4-01-02-000-00", "Tax Revenue - Property", "C"],
+  ["4-01-02-010-00", "Estate Tax", "C"],
+  ["4-01-02-020-00", "Donors Tax", "C"],
+  ["4-01-02-030-00", "Capital Gains Tax", "C"],
+  ["4-01-02-030-01", "Capital Gains Tax - Individuals", "C"],
+  ["4-01-02-030-02", "Capital Gains Tax - Corporations and Other Enterprises", "C"],
+  ["4-01-03-000-00", "Tax Revenue - Goods and Services", "C"],
+  ["4-01-03-010-00", "Import Duties", "C"],
+  ["4-01-03-010-01", "Live Animals, Animal Products", "C"],
+  ["4-01-03-010-02", "Vegetable Products", "C"],
+  ["4-01-03-010-03", "Animal or Vegetable Fats and Oils and their Cleavage Products; Prepared Edible Fats; Animal or Vegetable Waxes", "C"],
+  ["4-01-03-010-04", "Prepared Foodstuffs; Beverages, Spirits and Vinegar; Tobacco and Manufactured Tobacco Substitutes", "C"],
+  ["4-01-03-010-05", "Mineral Products", "C"],
+  ["4-01-03-010-06", "Products of the Chemical or Allied Industries", "C"],
+  ["4-01-03-010-07", "Plastics and Articles Thereof; Rubber and Articles Thereof", "C"],
+  ["4-01-03-010-08", "Raw Hides and Skins, Leather, Furskins and Articles Thereof; Saddlery and Harness; Travel Goods, Handbags and Similar Containers; Articles of Animal Gut (Other than Silk-Worm Gut)", "C"],
+  ["4-01-03-010-09", "Basketware and Wickerwork", "C"],
+  ["4-01-03-010-10", "Pulp of Wood or of other Fibrous Cellulosic Material; Recovered (Waste and Scrap) Paper or Paperboard; Paper and Paperboard and Articles Thereof", "C"],
+  ["4-01-03-010-11", "Textiles and Textile Articles", "C"],
+  ["4-01-03-010-12", "Footwear, Headgear, Umbrellas, Sun Umbrellas, Walking-Sticks, Seat- Sticks, Whips, Riding-Crops and Parts Thereof; Prepared Feathers and Articles made Therewith; Artificial Flowers; Articles of Human Hair", "C"],
+  ["4-01-03-010-13", "Articles of Stone, Plaster, Cement, Asbestos, Mica or Similar Materials; Ceramic Products; Glass and Glassware", "C"],
+  ["4-01-03-010-14", "Natural or Cultured Pearls, Precious or Semi-Precious Stones, Precious Metals, Metals Clad with Precious Metal, and Articles Thereof; Imitation Jewellery; Coin", "C"],
+  ["4-01-03-010-15", "Base Metals and Articles of Base Metal", "C"],
+  ["4-01-03-010-16", "Machinery and Mechanical Appliances; Electrical Equipment; Parts Thereof; Sound Recorders and Reproducers, Television Image and Sound Recorders and Reproducers, and Parts and Accessories of such Articles", "C"],
+  ["4-01-03-010-17", "Vehicles, Aircraft, Vessels And Associated Transport Equipment", "C"],
+  ["4-01-03-010-18", "Optical, Photographic, Cinematographic, Measuring, Checking, Precision, Medical or Surgical Instruments and Apparatus; Clocks and Watches; Musical Instruments; Parts and Accessories Thereof", "C"],
+  ["4-01-03-010-19", "Arms and Ammunition; Parts and Accessories Thereof", "C"],
+  ["4-01-03-010-20", "Miscellaneous Manufactured Articles", "C"],
+  ["4-01-03-010-21", "Works Of Art, Collectors' Pieces And Antiques", "C"],
+  ["4-01-03-010-99", "Other Import Duties", "C"],
+  ["4-01-03-020-00", "Excise Tax", "C"],
+  ["4-01-03-020-01", "Excise - Tobacco Products", "C"],
+  ["4-01-03-020-02", "Excise - Alcoholic Beverages", "C"],
+  ["4-01-03-020-03", "Excise - Mining - Non-Metalic Products", "C"],
+  ["4-01-03-020-04", "Excise - Mining - Metalic Products", "C"],
+  ["4-01-03-020-05", "Excise - Petroleum Products", "C"],
+  ["4-01-03-020-06", "Excise - Motor Vehicles", "C"],
+  ["4-01-03-020-07", "Excise - Mineral Products", "C"],
+  ["4-01-03-020-99", "Excise - Others", "C"],
+  ["4-01-03-030-00", "Business Tax", "C"],
+  ["4-01-03-030-01", "Value Added Tax", "C"],
+  ["4-01-03-030-02", "Expanded Value Added Tax", "C"],
+  ["4-01-03-030-03", "Percentage Tax", "C"],
+  ["4-01-03-040-00", "Tax on Sand, Gravel and other Quarry products", "C"],
+  ["4-01-03-050-00", "Tax on Delivery Vans and Trucks", "C"],
+  ["4-01-04-000-00", "Tax Revenue - Others", "C"],
+  ["4-01-04-010-00", "Documentary Stamp Tax", "C"],
+  ["4-01-04-020-00", "Motor Vehicle Users’ Charge", "C"],
+  ["4-01-04-020-01", "MVUC Proper", "C"],
+  ["4-01-04-020-02", "MVUC Fines and Penalties", "C"],
+  ["4-01-04-020-03", "Axle Overloading", "C"],
+  ["4-01-04-990-00", "Other Taxes", "C"],
+  ["4-01-04-990-01", "Other Taxes - Business", "C"],
+  ["4-01-04-990-02", "Other Taxes - Other than Business", "C"],
+  ["4-01-05-000-00", "Tax Revenue - Fines and Penalties", "C"],
+  ["4-01-05-010-00", "Tax Revenue - Fines and Penalties - Taxes on Individual and Corporation", "C"],
+  ["4-01-05-020-00", "Tax Revenue - Fines and Penalties - Property Taxes", "C"],
+  ["4-01-05-030-00", "Tax Revenue - Fines and Penalties - Taxes on Goods and Services", "C"],
+  ["4-01-05-040-00", "Tax Revenue - Fines and Penalties - Other Taxes", "C"],
+  ["4-02-00-000-00", "Service And Business Income", "C"],
+  ["4-02-01-000-00", "Service Income", "C"],
+  ["4-02-01-010-00", "Permit Fees", "C"],
+  ["4-02-01-010-01", "Permit Fees Import", "C"],
+  ["4-02-01-010-02", "Permit Fees Export", "C"],
+  ["4-02-01-010-99", "Other Permit Fees", "C"],
+  ["4-02-01-020-00", "Registration Fees", "C"],
+  ["4-02-01-030-00", "Registration Plates, Tags and Stickers Fees", "C"],
+  ["4-02-01-030-01", "Regular Plates", "C"],
+  ["4-02-01-030-02", "Optional Motor Vehicle Special Plate", "C"],
+  ["4-02-01-030-03", "Vanity Licensed Plates", "C"],
+  ["4-02-01-030-04", "Validating Tags/Stickers", "C"],
+  ["4-02-01-040-00", "Clearance and Certification Fees", "C"],
+  ["4-02-01-040-01", "Clearance Fees", "C"],
+  ["4-02-01-040-02", "Certification Fees", "C"],
+  ["4-02-01-040-03", "Endorsement Fees", "C"],
+  ["4-02-01-040-04", "Identification of Specimens", "C"],
+  ["4-02-01-050-00", "Franchising Fees", "C"],
+  ["4-02-01-060-00", "Licensing Fees", "C"],
+  ["4-02-01-070-00", "Supervision and Regulation Enforcement Fees", "C"],
+  ["4-02-01-080-00", "Spectrum Usage Fees", "C"],
+  ["4-02-01-090-00", "Legal Fees", "C"],
+  ["4-02-01-100-00", "Inspection Fees", "C"],
+  ["4-02-01-110-00", "Verification and Authentication Fees", "C"],
+  ["4-02-01-110-01", "Accreditation Fees", "C"],
+  ["4-02-01-110-02", "Weights and Measures Fees", "C"],
+  ["4-02-01-110-99", "Other Verification and Authentication Fees", "C"],
+  ["4-02-01-120-00", "Passport and Visa Fees", "C"],
+  ["4-02-01-120-01", "Passport Fees", "C"],
+  ["4-02-01-120-02", "Visa Fees", "C"],
+  ["4-02-01-130-00", "Processing Fees", "C"],
+  ["4-02-01-130-01", "Analysis Fees", "C"],
+  ["4-02-01-130-02", "Appeal Fees", "C"],
+  ["4-02-01-130-03", "Application Fees", "C"],
+  ["4-02-01-130-04", "Assessment Fees", "C"],
+  ["4-02-01-130-05", "Execution Fees", "C"],
+  ["4-02-01-130-06", "Express Lane or Special Lane Fees", "C"],
+  ["4-02-01-130-07", "Filing Fees", "C"],
+  ["4-02-01-130-08", "Identity Card Fees", "C"],
+  ["4-02-01-130-09", "Import Processing Fees", "C"],
+  ["4-02-01-130-10", "Oathtaking Fees", "C"],
+  ["4-02-01-130-11", "Review Fees", "C"],
+  ["4-02-01-130-12", "Testing Fees", "C"],
+  ["4-02-01-130-99", "Other Processing Fees", "C"],
+  ["4-02-01-140-00", "Fines and Penalties - Service Income", "C"],
+  ["4-02-01-990-00", "Other Service Income", "C"],
+  ["4-02-01-990-01", "Amendment Fees", "C"],
+  ["4-02-01-990-02", "Calibration Fees", "C"],
+  ["4-02-01-990-03", "Escheat Fees of Unclaimed Balances", "C"],
+  ["4-02-01-990-04", "Service Fees on Relent Loan", "C"],
+  ["4-02-01-990-05", "Technology Development Transfer and Commercialization", "C"],
+  ["4-02-01-990-06", "Other Geological and Energy Data", "C"],
+  ["4-02-01-990-99", "Other Service Income", "C"],
+  ["4-02-02-000-00", "Business Income", "C"],
+  ["4-02-02-010-00", "School Fees", "C"],
+  ["4-02-02-010-01", "Tuition Fees", "C"],
+  ["4-02-02-010-02", "Income Collected from Students", "C"],
+  ["4-02-02-010-03", "Income from Other Sources", "C"],
+  ["4-02-02-010-99", "Other School Fees", "C"],
+  ["4-02-02-020-00", "Affiliation Fees", "C"],
+  ["4-02-02-030-00", "Examination Fees", "C"],
+  ["4-02-02-040-00", "Seminar/Training Fees", "C"],
+  ["4-02-02-050-00", "Rent/Lease Income", "C"],
+  ["4-02-02-060-00", "Communication Network Fees", "C"],
+  ["4-02-02-070-00", "Transportation System Fees", "C"],
+  ["4-02-02-080-00", "Road Network Fees", "C"],
+  ["4-02-02-090-00", "Waterworks System Fees", "C"],
+  ["4-02-02-100-00", "Power Supply System Fees", "C"],
+  ["4-02-02-110-00", "Seaport System Fees", "C"],
+  ["4-02-02-120-00", "Landing and Parking Fees", "C"],
+  ["4-02-02-130-00", "Income from Hostels/Dormitories and Other Like Facilities", "C"],
+  ["4-02-02-140-00", "Slaughterhouse Operation", "C"],
+  ["4-02-02-150-00", "Income from Printing and Publication", "C"],
+  ["4-02-02-160-00", "Sales Revenue", "C"],
+  ["4-02-02-160-01", "Book Sales", "C"],
+  ["4-02-02-160-02", "Consultancy Fees", "C"],
+  ["4-02-02-160-03", "Entrance Fees", "C"],
+  ["4-02-02-160-04", "Film Showing Fees", "C"],
+  ["4-02-02-160-05", "Sale of Accountable Forms", "C"],
+  ["4-02-02-160-06", "Sale of Animals, Meat and Dairy", "C"],
+  ["4-02-02-160-07", "Sale of Technology thru Payback", "C"],
+  ["4-02-02-160-08", "Sale of Training Manuals", "C"],
+  ["4-02-02-160-99", "Other Sales", "C"],
+  ["4-02-02-161-00", "Sales Discounts", "C"],
+  ["4-02-02-170-00", "Hospital Fees", "C"],
+  ["4-02-02-170-01", "Drugs and Medicines", "C"],
+  ["4-02-02-170-02", "Medical Supplies", "C"],
+  ["4-02-02-170-03", "Medical Fees - Operating Room", "C"],
+  ["4-02-02-170-04", "Medical Fees - Radiology", "C"],
+  ["4-02-02-170-05", "Medical Fees - Laboratory", "C"],
+  ["4-02-02-170-06", "Medical Fees - Hemodialysis", "C"],
+  ["4-02-02-170-07", "Medical Fees - Cardio-Vascular Services", "C"],
+  ["4-02-02-170-08", "Medical Fees - Nuclear Medicine Services", "C"],
+  ["4-02-02-170-09", "Medical Fees - Physical Medicine & Rehabilitation Services", "C"],
+  ["4-02-02-170-10", "Medical Fees - Pulmonary Services", "C"],
+  ["4-02-02-170-11", "Medical Fees - Neurology Services", "C"],
+  ["4-02-02-170-99", "Other Fees", "C"],
+  ["4-02-02-180-00", "Guarantee Income", "C"],
+  ["4-02-02-190-00", "Fidelity Insurance Premiums", "C"],
+  ["4-02-02-200-00", "Dividend Income", "C"],
+  ["4-02-02-210-00", "Interest Income", "C"],
+  ["4-02-02-210-01", "Interest on NG Deposits", "C"],
+  ["4-02-02-210-02", "Interest on Advances to GOCCs", "C"],
+  ["4-02-02-210-99", "Interest -Others", "C"],
+  ["4-02-02-220-00", "Share in the Profit of Joint Venture", "C"],
+  ["4-02-02-230-00", "Fines and Penalties - Business Income", "C"],
+  ["4-02-02-990-00", "Other Business Income", "C"],
+  ["4-02-02-990-01", "Income from Compromise Agreement", "C"],
+  ["4-02-02-990-02", "Pasture Income", "C"],
+  ["4-02-02-990-03", "Warehousing Fees", "C"],
+  ["4-02-02-990-99", "Other Business Income", "C"],
+  ["4-03-00-000-00", "Assistance And Subsidy", "C"],
+  ["4-03-01-000-00", "Assistance and Subsidy", "C"],
+  ["4-03-01-010-00", "Subsidy from National Government", "C"],
+  ["4-03-01-020-00", "Subsidy from Other National Government Agencies", "C"],
+  ["4-03-01-030-00", "Assistance from Local Government Units", "C"],
+  ["4-03-01-040-00", "Assistance from Government-Owned and/or Controlled Corporations", "C"],
+  ["4-03-01-050-00", "Subsidy from Other Funds", "C"],
+  ["4-03-01-060-00", "Subsidy from Central Office", "C"],
+  ["4-04-00-000-00", "Shares, Grants And Donations", "C"],
+  ["4-04-01-000-00", "Shares", "C"],
+  ["4-04-01-010-00", "Share from National Wealth", "C"],
+  ["4-04-01-010-01", "Tobacco Excise Tax (Virginia) per R.A. 7171", "C"],
+  ["4-04-01-010-02", "Tobacco Excise Tax (Burley and Native) per R.A. 8240", "C"],
+  ["4-04-01-010-03", "Mining Taxes per R.A. 7160", "C"],
+  ["4-04-01-010-04", "Royalties per R.A. 7160", "C"],
+  ["4-04-01-010-05", "Forestry Charges per R.A. 7160", "C"],
+  ["4-04-01-010-06", "Fishery Charges per R.A. 7160", "C"],
+  ["4-04-01-010-07", "Renewable Energy charges per R.A. 9513", "C"],
+  ["4-04-01-010-08", "Income Tax Collections in ECO ZONES per R.A. 7922 and R.A. 8748", "C"],
+  ["4-04-01-010-09", "Value Added Tax per R.A. 7643", "C"],
+  ["4-04-01-010-10", "Value Added Tax in lieu of Franchise Tax per R.A. 7953 and R.A. 8407", "C"],
+  ["4-04-01-020-00", "Share from PAGCOR/PCSO", "C"],
+  ["4-04-01-030-00", "Share from Earnings of GOCCs", "C"],
+  ["4-04-02-000-00", "Grants and Donations", "C"],
+  ["4-04-02-010-00", "Income from Grants and Donations in Cash", "C"],
+  ["4-04-02-020-00", "Income from Grants and Donations in Kind", "C"],
+  ["4-05-00-000-00", "Gains", "C"],
+  ["4-05-01-000-00", "Gains", "C"],
+  ["4-05-01-010-00", "Gain on Foreign Exchange (FOREX)", "C"],
+  ["4-05-01-020-00", "Gain on Sale of Investments", "C"],
+  ["4-05-01-030-00", "Gain on Sale of Investment Property", "C"],
+  ["4-05-01-040-00", "Gain on Sale of Property, Plant and Equipment", "C"],
+  ["4-05-01-050-00", "Gain on Initial Recognition of Biological Assets", "C"],
+  ["4-05-01-060-00", "Gain on Sale of Biological Assets", "C"],
+  ["4-05-01-070-00", "Gain from Changes in Fair Value Less Cost to Sell of Biological Assets Due to Physical Change", "C"],
+  ["4-05-01-080-00", "Gain from Changes in Fair Value Less Cost to Sell of Biological Assets Due to Price Change", "C"],
+  ["4-05-01-090-00", "Gain on Sale of Agricultural Produce", "C"],
+  ["4-05-01-100-00", "Gain on Sale of Intangible Assets", "C"],
+  ["4-05-01-990-00", "Other Gains", "C"],
+  ["4-06-00-000-00", "Other Non-Operating Income", "C"],
+  ["4-06-01-000-00", "Sale of Assets", "C"],
+  ["4-06-01-010-00", "Sale of Garnished/Confiscated/Abandoned/Seized Goods and Properties", "C"],
+  ["5-00-00-000-00", "CURRENT OPERATING EXPENSES", "D"],
+  ["5-01-00-000-00", "Personnel Services", "D"],
+  ["5-01-01-000-00", "Salaries and Wages", "D"],
+  ["5-01-01-010-00", "Salaries and Wages - Regular", "D"],
+  ["5-01-01-010-01", "Basic Salary - Civilian", "D"],
+  ["5-01-01-010-02", "Base Pay - Military/Uniformed Personnel", "D"],
+  ["5-01-01-020-00", "Salaries and Wages - Casual/Contractual", "D"],
+  ["5-01-02-000-00", "Other Compensation", "D"],
+  ["5-01-02-010-00", "Personnel Economic Relief Allowance (PERA)", "D"],
+  ["5-01-02-010-01", "PERA - Civilian", "D"],
+  ["5-01-02-010-02", "PERA - Military/Uniformed Personnel", "D"],
+  ["5-01-02-020-00", "Representation Allowance", "D"],
+  ["5-01-02-030-00", "Transportation Allowance", "D"],
+  ["5-01-02-030-01", "Transportation Allowance", "D"],
+  ["5-01-02-030-02", "RATA of Sectoral/Alternate Sectoral Representatives", "D"],
+  ["5-01-02-040-00", "Clothing/Uniform Allowance", "D"],
+  ["5-01-02-040-01", "Clothing/Uniform Allowance - Civilian", "D"],
+  ["5-01-02-040-02", "Shoes Allowance - Civilian", "D"],
+  ["5-01-02-040-03", "Clothing/Uniform Allowance - Military/Uniformed Personnel", "D"],
+  ["5-01-02-040-04", "Clothing/Uniform Allowance - Initial - Military/Uniformed Personnel", "D"],
+  ["5-01-02-040-05", "Clothing/Uniform Allowance - Special - Military/Uniformed Personnel", "D"],
+  ["5-01-02-040-06", "Clothing/Uniform Allowance - Cold Weather - Military/Uniformed Personnel", "D"],
+  ["5-01-02-040-07", "Clothing/Uniform Allowance - Reenlistment - Military/Uniformed Personnel", "D"],
+  ["5-01-02-040-08", "Clothing/Uniform Allowance - Winter - Military/Uniformed Personnel", "D"],
+  ["5-01-02-040-09", "Clothing/Uniform Allowance - Combat - Military/Uniformed Personnel", "D"],
+  ["5-01-02-040-10", "Clothing/Uniform Allowance - Maintenance Cold Weather - Military/Uniformed Personnel", "D"],
+  ["5-01-02-040-11", "Clothing/Uniform Allowance - Replacement - Military/Uniformed Personnel", "D"],
+  ["5-01-02-050-00", "Subsistence Allowance", "D"],
+  ["5-01-02-050-01", "Subsistence Allowance - Military/Uniformed Personnel", "D"],
+  ["5-01-02-050-02", "Subsistence Allowance - Magna Carta Benefits for Science and Technology under R.A. 8439", "D"],
+  ["5-01-02-050-03", "Subsistence Allowance - Magna Carta Benefits for Public Health Workers under R.A. 7305", "D"],
+  ["5-01-02-050-04", "Subsistence Allowance - Magna Carta Benefits for Public Social Workers under R.A. 9432", "D"],
+  ["5-01-02-060-00", "Laundry Allowance", "D"],
+  ["5-01-02-060-01", "Laundry Allowance - Civilian", "D"],
+  ["5-01-02-060-02", "Laundry Allowance - Military/Uniformed Personnel", "D"],
+  ["5-01-02-060-03", "Laundry Allowance - Magna Carta Benefits for Science and Technology under R.A. 8439", "D"],
+  ["5-01-02-060-04", "Laundry Allowance - Magna Carta Benefits for Public Health Workers under R.A. 7305", "D"],
+  ["5-01-02-060-05", "Laundry Allowance - Magna Carta Benefits for Public Social Workers under R.A. 9432", "D"],
+  ["5-01-02-070-00", "Quarters Allowance", "D"],
+  ["5-01-02-070-01", "Quarters Allowance - Civilian", "D"],
+  ["5-01-02-070-02", "Quarters Allowance - Military/Uniformed Personnel", "D"],
+  ["5-01-02-070-03", "Quarters Allowance - Magna Carta Benefits for Science and Technology under R.A. 8439", "D"],
+  ["5-01-02-070-04", "Quarters Allowance - Magna Carta Benefits for Public Health Workers under R.A. 7305", "D"],
+  ["5-01-02-070-05", "Quarters Allowance Magna Carta Benefits for Public Social Workers under R.A. 9432", "D"],
+  ["5-01-02-080-00", "Productivity Incentive Allowance", "D"],
+  ["5-01-02-080-01", "Productivity Incentive Allowance - Civilian", "D"],
+  ["5-01-02-080-02", "Productivity Incentive Allowance - Military/Uniformed Personnel", "D"],
+  ["5-01-02-090-00", "Overseas Allowance", "D"],
+  ["5-01-02-090-01", "Overseas Allowance - Civilian", "D"],
+  ["5-01-02-090-02", "Overseas Allowance - Military/Uniformed Personnel", "D"],
+  ["5-01-02-100-00", "Honoraria", "D"],
+  ["5-01-02-100-01", "Honoraria - Civilian", "D"],
+  ["5-01-02-100-02", "Honoraria - Military/Uniformed Personnel", "D"],
+  ["5-01-02-100-03", "Honoraria - Magna Carta Benefits for Science and Technology under R.A. 8439", "D"],
+  ["5-01-02-100-04", "Honoraria - Magna Carta Benefits for Public Health Workers under R.A. 7305", "D"],
+  ["5-01-02-100-05", "Honoraria - Magna Carta Benefits for Public Social Workers under R.A. 9432", "D"],
+  ["5-01-02-110-00", "Hazard Pay (HP)", "D"],
+  ["5-01-02-110-01", "Hazard Pay", "D"],
+  ["5-01-02-110-02", "Hazard Duty Pay - Civilian", "D"],
+  ["5-01-02-110-03", "Hazard Duty Pay - Military/Uniformed Personnel", "D"],
+  ["5-01-02-110-04", "HP - Magna Carta Benefits for Science and Technology under R.A. 8439", "D"],
+  ["5-01-02-110-05", "HP - Magna Carta Benefits for Public Health Workers under R.A. 7305", "D"],
+  ["5-01-02-110-06", "HP - Magna Carta Benefits for Public Social Workers under R.A. 9432", "D"],
+  ["5-01-02-110-07", "Radiation Hazard Pay not exceeding 15% of Basic Salary", "D"],
+  ["5-01-02-110-08", "High Risk Duty Pay", "D"],
+  ["5-01-02-110-09", "Hazardous Duty Pay", "D"],
+  ["5-01-02-120-00", "Longevity Pay", "D"],
+  ["5-01-02-120-01", "Longevity Pay - Civilian", "D"],
+  ["5-01-02-120-02", "Longevity Pay - Military/Uniformed Personnel", "D"],
+  ["5-01-02-120-03", "Longevity Pay - Magna Carta Benefits for Science and Technology under R.A. 8439", "D"],
+  ["5-01-02-120-04", "Longevity Pay - Magna Carta Benefits for Public Health Workers under R.A. 7305", "D"],
+  ["5-01-02-120-05", "Longevity Pay - Magna Carta Benefits for Public Social Workers under R.A. 9432", "D"],
+  ["5-01-02-130-00", "Overtime and Night Pay", "D"],
+  ["5-01-02-130-01", "Overtime Pay", "D"],
+  ["5-01-02-130-02", "Night-shift Differential Pay", "D"],
+  ["5-01-02-140-00", "Year End Bonus", "D"],
+  ["5-01-02-140-01", "Bonus - Civilian", "D"],
+  ["5-01-02-140-02", "Bonus - Military/Uniformed Personnel", "D"],
+  ["5-01-02-150-00", "Cash Gift", "D"],
+  ["5-01-02-150-01", "Cash Gift - Civilian", "D"],
+  ["5-01-02-150-02", "Cash Gift - Military/Uniformed Personnel", "D"],
+  ["5-01-02-990-00", "Other Bonuses and Allowances", "D"],
+  ["5-01-02-990-01", "Per Diems - Civilian", "D"],
+  ["5-01-02-990-02", "Allowance of PAO Lawyers and Employees Assigned in Night Courts - Civilian", "D"],
+  ["5-01-02-990-03", "Allowance of Attorney's de Officio - Civilian", "D"],
+  ["5-01-02-990-04", "Special Hardship Allowance - Civilian", "D"],
+  ["5-01-02-990-05", "Private Messenger Fee - Civilian", "D"],
+  ["5-01-02-990-06", "Inquest Allowance - Civilian", "D"],
+  ["5-01-02-990-07", "Special Duty Allowance - Civilian", "D"],
+  ["5-01-02-990-08", "Special Duty Allowance - Military/Uniformed Personnel", "D"],
+  ["5-01-02-990-09", "Special Allowance for Judges and Justices - Civilian", "D"],
+  ["5-01-02-990-10", "Special Allowance for the Members of the Prosecution Service", "D"],
+  ["5-01-02-990-11", "Collective Negotiation Agreement Incentive - Civilian", "D"],
+  ["5-01-02-990-12", "Productivity Enhancement Incentive - Civilian", "D"],
+  ["5-01-02-990-13", "Productivity Enhancement Incentive - Military/Uniformed Personnel", "D"],
+  ["5-01-02-990-14", "Performance Based Bonus - Civilian", "D"],
+  ["5-01-02-990-15", "Performance Based Bonus - Military/Uniformed Personnel", "D"],
+  ["5-01-02-990-16", "Flying Pay - Duty Based Allowance-Military/Uniformed Personnel (DBA- MUP)", "D"],
+  ["5-01-02-990-17", "Special Group Term Insurance - DBA-MUP", "D"],
+  ["5-01-02-990-18", "Sea Duty Pay - DBA-MUP", "D"],
+  ["5-01-02-990-19", "Combat Incentive Pay - DBA-MUP", "D"],
+  ["5-01-02-990-20", "Reenlistment Pay - DBA-MUP", "D"],
+  ["5-01-02-990-21", "Other Subsistence Allowance - DBA-MUP", "D"],
+  ["5-01-02-990-22", "Training Subsistence Allowance - DBA-MUP", "D"],
+  ["5-01-02-990-23", "Civil Disturbance Control Subsistence Allowance - DBA-MUP", "D"],
+  ["5-01-02-990-24", "Subsistence of Detainees - DBA-MUP", "D"],
+  ["5-01-02-990-25", "Hardship Allowance - DBA-MUP", "D"],
+  ["5-01-02-990-26", "Combat Duty Pay - DBA-MUP", "D"],
+  ["5-01-02-990-27", "Incentive Pay - DBA-MUP", "D"],
+  ["5-01-02-990-28", "Instructor's Duty Pay - DBA-MUP", "D"],
+  ["5-01-02-990-29", "Reservist's Pay - DBA-MUP", "D"],
+  ["5-01-02-990-30", "Medal of Valor Award - DBA-MUP", "D"],
+  ["5-01-02-990-31", "Hospitalization Expenses - DBA-MUP", "D"],
+  ["5-01-02-990-32", "Specialist's Pay - DBA-MUP", "D"],
+  ["5-01-02-990-33", "Parachutist Pay - DBA-MUP", "D"],
+  ["5-01-03-000-00", "Personnel Benefit Contributions", "D"],
+  ["5-01-03-010-00", "Retirement and Life Insurance Premiums", "D"],
+  ["5-01-03-020-00", "Pag-IBIG Contributions", "D"],
+  ["5-01-03-020-01", "Pag-IBIG – Civilian", "D"],
+  ["5-01-03-020-02", "Pag-IBIG - Military/Uniformed Personnel", "D"],
+  ["5-01-03-030-00", "PhilHealth Contributions", "D"],
+  ["5-01-03-030-01", "PhilHealth – Civilian", "D"],
+  ["5-01-03-030-02", "PhilHealth - Military/Uniformed Personnel", "D"],
+  ["5-01-03-040-00", "Employees Compensation Insurance Premiums", "D"],
+  ["5-01-03-040-01", "ECIP - Civilian", "D"],
+  ["5-01-03-040-02", "ECIP - Military/Uniformed Personnel", "D"],
+  ["5-01-03-050-00", "Provident/Welfare Fund Contributions", "D"],
+  ["5-01-04-000-00", "Other Personnel Benefits", "D"],
+  ["5-01-04-010-00", "Pension Benefits", "D"],
+  ["5-01-04-010-01", "Pension Benefits - Civilian", "D"],
+  ["5-01-04-010-02", "Pension Benefits - Military/Uniformed Personnel", "D"],
+  ["5-01-04-010-03", "Pension Benefits - Veterans", "D"],
+  ["5-01-04-020-00", "Retirement Gratuity", "D"],
+  ["5-01-04-020-01", "Retirement Gratuity - Civilian", "D"],
+  ["5-01-04-020-02", "Retirement Gratuity - Military/Uniformed Personnel", "D"],
+  ["5-01-04-030-00", "Terminal Leave Benefits", "D"],
+  ["5-01-04-030-01", "Terminal Leave Benefits - Civilian", "D"],
+  ["5-01-04-030-02", "Terminal Leave Benefits - Military/Uniformed Personnel", "D"],
+  ["5-01-04-990-00", "Other Personnel Benefits", "D"],
+  ["5-01-04-990-01", "Lump-sum for Creation of New Positions - Civilian", "D"],
+  ["5-01-04-990-02", "Lump-sum for Creation of New Positions - Military/Uniformed Personnel", "D"],
+  ["5-01-04-990-03", "Lump-sum for Reclassification of Positions", "D"],
+  ["5-01-04-990-04", "Lump-sum for Equivalent-Record Form", "D"],
+  ["5-01-04-990-05", "Lump-sum for Master Teachers", "D"],
+  ["5-01-04-990-06", "Lump-sum for Compensation Adjustment", "D"],
+  ["5-01-04-990-07", "Lump-sum for Filling of Positions", "D"],
+  ["5-01-04-990-08", "Lump-sum for NBC No. 308", "D"],
+  ["5-01-04-990-09", "Lump-sum for Personnel Services", "D"],
+  ["5-01-04-990-10", "Lump-sum for Step Increments - Length of Service", "D"],
+  ["5-01-04-990-11", "Lump-sum for Step Increments - Meritorious Performance", "D"],
+  ["5-01-04-990-12", "Other Lump-sum", "D"],
+  ["5-01-04-990-13", "Police Benefits (NAPOLCOM)", "D"],
+  ["5-01-04-990-99", "Other Personnel Benefits", "D"],
+  ["5-02-00-000-00", "Maintenance and Other Operating Expenses", "D"],
+  ["5-02-01-000-00", "Traveling Expenses", "D"],
+  ["5-02-01-010-00", "Traveling Expenses - Local", "D"],
+  ["5-02-01-020-00", "Traveling Expenses - Foreign", "D"],
+  ["5-02-02-000-00", "Training and Scholarship Expenses", "D"],
+  ["5-02-02-010-00", "Training Expenses", "D"],
+  ["5-02-02-020-00", "Scholarship Grants/Expenses", "D"],
+  ["5-02-03-000-00", "Supplies and Materials Expenses", "D"],
+  ["5-02-03-010-00", "Office Supplies Expenses", "D"],
+  ["5-02-03-020-00", "Accountable Forms Expenses", "D"],
+  ["5-02-03-030-00", "Non-Accountable Forms Expenses", "D"],
+  ["5-02-03-040-00", "Animal/Zoological Supplies Expenses", "D"],
+  ["5-02-03-050-00", "Food Supplies Expenses", "D"],
+  ["5-02-03-060-00", "Welfare Goods Expenses", "D"],
+  ["5-02-03-070-00", "Drugs and Medicines Expenses", "D"],
+  ["5-02-03-080-00", "Medical, Dental and Laboratory Supplies Expenses", "D"],
+  ["5-02-03-090-00", "Fuel, Oil and Lubricants Expenses", "D"],
+  ["5-02-03-100-00", "Agricultural and Marine Supplies Expenses", "D"],
+  ["5-02-03-110-00", "Textbooks and Instructional Materials Expenses", "D"],
+  ["5-02-03-110-01", "Textbooks and Instructional Materials Expenses", "D"],
+  ["5-02-03-110-02", "Chalk Allowance", "D"],
+  ["5-02-03-120-00", "Military, Police and Traffic Supplies Expenses", "D"],
+  ["5-02-03-130-00", "Chemical and Filtering Supplies Expenses", "D"],
+  ["5-02-03-210-00", "Semi-Expendable Machinery and Equipment Expenses", "D"],
+  ["5-02-03-210-01", "Semi-Expendable Machinery Expenses", "D"],
+  ["5-02-03-210-02", "Semi-Expendable-Office Equipment Expenses", "D"],
+  ["5-02-03-210-03", "Semi-Expendable-Information and Communications Technology Equipment Expenses", "D"],
+  ["5-02-03-210-04", "Semi-Expendable-Agricultural and Forestry Equipment Expenses", "D"],
+  ["5-02-03-210-05", "Semi-Expendable-Marine and Fishery Equipment Expenses", "D"],
+  ["5-02-03-210-06", "Semi-Expendable-Airport Equipment Expenses", "D"],
+  ["5-02-03-210-07", "Semi-Expendable-Communications Equipment Expenses", "D"],
+  ["5-02-03-210-08", "Semi-Expendable-Disaster Response and Rescue Equipment Expenses", "D"],
+  ["5-02-03-210-09", "Semi-Expendable-Military, Police and Security Equipment Expenses", "D"],
+  ["5-02-03-210-10", "Semi-Expendable-Medical Equipment Expenses", "D"],
+  ["5-02-03-210-11", "Semi-Expendable-Printing Equipment Expenses", "D"],
+  ["5-02-03-210-12", "Semi-Expendable-Sports Equipment Expenses", "D"],
+  ["5-02-03-210-13", "Semi-Expendable-Technical and Scientific Equipment Expenses", "D"],
+  ["5-02-03-210-99", "Semi-Expendable-Other Machinery and Equipment Expenses", "D"],
+  ["5-02-03-220-00", "Semi-Expendable Furniture, Fixtures and Books Expense", "D"],
+  ["5-02-03-220-01", "Semi-Expendable-Furniture and Fixtures Expenses", "D"],
+  ["5-02-03-220-02", "Semi-Expendable-Books Expenses", "D"],
+  ["5-02-03-990-00", "Other Supplies and Materials Expenses", "D"],
+  ["5-02-04-000-00", "Utility Expenses", "D"],
+  ["5-02-04-010-00", "Water Expenses", "D"],
+  ["5-02-04-020-00", "Electricity Expenses", "D"],
+  ["5-02-05-000-00", "Communication Expenses", "D"],
+  ["5-02-05-010-00", "Postage and Courier Services", "D"],
+  ["5-02-05-020-00", "Telephone Expenses", "D"],
+  ["5-02-05-020-01", "Mobile", "D"],
+  ["5-02-05-020-02", "Landline", "D"],
+  ["5-02-05-030-00", "Internet Subscription Expenses", "D"],
+  ["5-02-05-040-00", "Cable, Satellite, Telegraph and Radio Expenses", "D"],
+  ["5-02-06-000-00", "Awards/Rewards and Prizes", "D"],
+  ["5-02-06-010-00", "Awards/Rewards Expenses", "D"],
+  ["5-02-06-010-01", "Awards/Rewards Expenses", "D"],
+  ["5-02-06-010-02", "Rewards and Incentives", "D"],
+  ["5-02-06-020-00", "Prizes", "D"],
+  ["5-02-07-000-00", "Survey, Research, Exploration and Development Expenses", "D"],
+  ["5-02-07-010-00", "Survey Expenses", "D"],
+  ["5-02-07-020-00", "Research, Exploration and Development Expenses", "D"],
+  ["5-02-08-000-00", "Demolition/Relocation and Desilting/Dredging Expenses", "D"],
+  ["5-02-08-010-00", "Demolition and Relocation Expenses", "D"],
+  ["5-02-08-020-00", "Desilting and Dredging Expenses", "D"],
+  ["5-02-09-000-00", "Generation, Transmission and Distribution Expenses", "D"],
+  ["5-02-09-010-00", "Generation, Transmission and Distribution Expenses", "D"],
+  ["5-02-10-010-00", "Confidential Expenses", "D"],
+  ["5-02-10-020-00", "Intelligence Expenses", "D"],
+  ["5-02-10-030-00", "Extraordinary and Miscellaneous Expenses", "D"],
+  ["5-02-11-000-00", "Professional Services", "D"],
+  ["5-02-11-010-00", "Legal Services", "D"],
+  ["5-02-11-020-00", "Auditing Services", "D"],
+  ["5-02-11-030-00", "Consultancy Services", "D"],
+  ["5-02-11-990-00", "Other Professional Services", "D"],
+  ["5-02-12-000-00", "General Services", "D"],
+  ["5-02-12-010-00", "Environment/Sanitary Services", "D"],
+  ["5-02-12-020-00", "Janitorial Services", "D"],
+  ["5-02-12-030-00", "Security Services", "D"],
+  ["5-02-12-990-00", "Other General Services", "D"],
+  ["5-02-13-000-00", "Repairs and Maintenance", "D"],
+  ["5-02-13-010-00", "Repairs and Maintenance - Investment Property", "D"],
+  ["5-02-13-020-00", "Repairs and Maintenance - Land Improvements", "D"],
+  ["5-02-13-020-01", "Repairs and Maintenance-Aquaculture Structures", "D"],
+  ["5-02-13-020-02", "Repairs and Maintenance - Reforestation Projects", "D"],
+  ["5-02-13-020-99", "Repairs and Maintenance - Other Land Improvements", "D"],
+  ["5-02-13-030-00", "Repairs and Maintenance - Infrastructure Assets", "D"],
+  ["5-02-13-030-01", "Repairs and Maintenance - Road Networks", "D"],
+  ["5-02-13-030-02", "Repairs and Maintenance - Flood Control Systems", "D"],
+  ["5-02-13-030-03", "Repairs and Maintenance - Sewer Systems", "D"],
+  ["5-02-13-030-04", "Repairs and Maintenance - Water Supply Systems", "D"],
+  ["5-02-13-030-05", "Repairs and Maintenance - Power Supply Systems", "D"],
+  ["5-02-13-030-06", "Repairs and Maintenance - Communication Networks", "D"],
+  ["5-02-13-030-07", "Repairs and Maintenance - Seaport Systems", "D"],
+  ["5-02-13-030-08", "Repairs and Maitenance - Airport Systems", "D"],
+  ["5-02-13-030-09", "Repairs and Maintenance - Parks, Plazas and Monuments", "D"],
+  ["5-02-13-030-99", "Repairs and Maintenance - Other Infrastructure Assets", "D"],
+  ["5-02-13-040-00", "Repairs and Maintenance - Buildings and Other Structures", "D"],
+  ["5-02-13-040-01", "Repairs and Maintenance - Buildings", "D"],
+  ["5-02-13-040-02", "Repairs and Maintenance - School Buildings", "D"],
+  ["5-02-13-040-03", "Repairs and Maintenance - Hospitals and Health Centers", "D"],
+  ["5-02-13-040-04", "Repairs and Maintenance - Markets", "D"],
+  ["5-02-13-040-05", "Repairs and Maintenance - Slaughterhouses", "D"],
+  ["5-02-13-040-06", "Repairs and Maintenance - Hostels and Dormitories", "D"],
+  ["5-02-13-040-99", "Repairs and Maintenance - Other Structures", "D"],
+  ["5-02-13-050-00", "Repairs and Maintenance - Machinery and Equipment", "D"],
+  ["5-02-13-050-01", "Repairs and Maintenance - Machinery", "D"],
+  ["5-02-13-050-02", "Repairs and Maintenance - Office Equipment", "D"],
+  ["5-02-13-050-03", "Repairs and Maintenance - ICT Equipment", "D"],
+  ["5-02-13-050-04", "Repairs and Maintenance - Agricultural and Forestry Equipment", "D"],
+  ["5-02-13-050-05", "Repairs and Maintenance - Marine and Fishery Equipment", "D"],
+  ["5-02-13-050-06", "Repairs and Maintenance - Airport Equipment", "D"],
+  ["5-02-13-050-07", "Repairs and Maintenance - Communication Equipment", "D"],
+  ["5-02-13-050-08", "Repairs and Maintenance - Construction and Heavy Equipment", "D"],
+  ["5-02-13-050-09", "Repairs and Maintenance - Disaster Response and Rescue Equipment", "D"],
+  ["5-02-13-050-10", "Repairs and Maintenance - Military, Police and Security Equipment", "D"],
+  ["5-02-13-050-11", "Repairs and Maintenance - Medical Equipment", "D"],
+  ["5-02-13-050-12", "Repairs and Maintenance - Printing Equipment", "D"],
+  ["5-02-13-050-13", "Repairs and Maintenance - Sports Equipment", "D"],
+  ["5-02-13-050-14", "Repairs and Maintenance - Technical and Scientific Equipment", "D"],
+  ["5-02-13-050-99", "Repairs and Maintenance - Other Machinery and Equipment", "D"],
+  ["5-02-13-060-00", "Repairs and Maintenance - Transportation Equipment", "D"],
+  ["5-02-13-060-01", "Repairs and Maintenance - Motor Vehicles", "D"],
+  ["5-02-13-060-02", "Repairs and Maintenance - Trains", "D"],
+  ["5-02-13-060-03", "Repairs and Maintenance - Aircrafts and Aircrafts Ground Equipment", "D"],
+  ["5-02-13-060-04", "Repairs and Maintenance - Watercrafts", "D"],
+  ["5-02-13-060-99", "Repairs and Maintenance - Other Transportation Equipment", "D"],
+  ["5-02-13-070-00", "Repairs and Maintenance - Furniture and Fixtures", "D"],
+  ["5-02-13-080-00", "Repairs and Maintenance - Leased Assets", "D"],
+  ["5-02-13-080-01", "Repairs and Maintenance - Buildings and Other Structures", "D"],
+  ["5-02-13-080-02", "Repairs and Maintenance - Machinery and Equipment", "D"],
+  ["5-02-13-080-03", "Repairs and Maintenance - Transportation Equipment", "D"],
+  ["5-02-13-080-99", "Repairs and Maintenance - Other Leased Assets", "D"],
+  ["5-02-13-090-00", "Repairs and Maintenance - Leased Assets Improvements", "D"],
+  ["5-02-13-090-01", "Repairs and Maintenance - Land", "D"],
+  ["5-02-13-090-02", "Repairs and Maintenance - Buildings", "D"],
+  ["5-02-13-090-99", "Repairs and Maintenance - Other Leased Assets Improvements", "D"],
+  ["5-02-13-100-00", "Restoration and Maintenance - Heritage Assets", "D"],
+  ["5-02-13-100-01", "Restoration and Maintenance - Historical Buildings", "D"],
+  ["5-02-13-100-02", "Restoration and Maintenance -Works of Arts and Archeological Specimens", "D"],
+  ["5-02-13-100-99", "Restoration and MaintenanceOther Heritage Assets", "D"],
+  ["5-02-13-990-00", "Repairs and Maintenance - Other Property, Plant and Equipment", "D"],
+  ["5-02-13-990-01", "Repairs and Maintenance - Work/Zoo Animals", "D"],
+  ["5-02-13-990-99", "Repairs and Maintenance - Other Property, Plant and Equipment", "D"],
+  ["5-02-14-000-00", "Financial Assistance/Subsidy", "D"],
+  ["5-02-14-010-00", "Subsidy to NGAs", "D"],
+  ["5-02-14-020-00", "Financial Assistance to NGAs", "D"],
+  ["5-02-14-030-00", "Financial Assistance to Local Government Units", "D"],
+  ["5-02-14-030-01", "Tobacco Excise Tax (Virginia) per R.A. 7171", "D"],
+  ["5-02-14-030-02", "Tobacco Excise Tax (Burley and Native) per R.A. 8240", "D"],
+  ["5-02-14-030-03", "Mining Taxes per R.A. 7160", "D"],
+  ["5-02-14-030-04", "Royalties per R.A. 7160", "D"],
+  ["5-02-14-030-05", "Forestry Charges per R.A. 7160", "D"],
+  ["5-02-14-030-06", "Fishery Charges per R.A. 7160", "D"],
+  ["5-02-14-030-07", "Renewable Energy charges per R.A. 9513", "D"],
+  ["5-02-14-030-08", "Income Tax Collections in ECO ZONES per R.A. 7922 and R.A. 8748", "D"],
+  ["5-02-14-030-09", "Value Added Tax per R.A. 7643", "D"],
+  ["5-02-14-030-10", "Value Added Tax in lieu of Franchise Tax per R.A. 7953 and R.A. 8407", "D"],
+  ["5-02-14-040-00", "Budgetary Support to Government-Owned and/or Controlled Corporations", "D"],
+  ["5-02-14-040-01", "Subsidy Support to Operations of GOCCs", "D"],
+  ["5-02-14-040-02", "Road Networks", "D"],
+  ["5-02-14-040-03", "Flood Control Systems", "D"],
+  ["5-02-14-040-04", "Sewer Systems", "D"],
+  ["5-02-14-040-05", "Water Supply Systems", "D"],
+  ["5-02-14-040-06", "Power Supply Systems", "D"],
+  ["5-02-14-040-07", "Communication Networks", "D"],
+  ["5-02-14-040-08", "Seaport Systems", "D"],
+  ["5-02-14-040-09", "Airport Systems", "D"],
+  ["5-02-14-040-10", "Parks, Plazas and Monuments", "D"],
+  ["5-02-14-040-99", "Other Infrastructure Assets", "D"],
+  ["5-02-14-050-00", "Financial Assistance to NGOs/POs", "D"],
+  ["5-02-14-060-00", "Internal Revenue Allotment", "D"],
+  ["5-02-14-990-00", "Subsidies - Others", "D"],
+  ["5-02-15-000-00", "Taxes, Insurance Premiums and Other Fees", "D"],
+  ["5-02-15-010-00", "Taxes, Duties and Licenses", "D"],
+  ["5-02-15-010-01", "Taxes, Duties and Licenses", "D"],
+  ["5-02-15-010-02", "Tax Refund", "D"],
+  ["5-02-15-020-00", "Fidelity Bond Premiums", "D"],
+  ["5-02-15-030-00", "Insurance Expenses", "D"],
+  ["5-02-16-000-00", "Labor and Wages", "D"],
+  ["5-02-16-010-00", "Labor and Wages", "D"],
+  ["5-02-99-000-00", "Other Maintenance and Operating Expenses", "D"],
+  ["5-02-99-010-00", "Advertising Expenses", "D"],
+  ["5-02-99-020-00", "Printing and Publication Expenses", "D"],
+  ["5-02-99-030-00", "Representation Expenses", "D"],
+  ["5-02-99-040-00", "Transportation and Delivery Expenses", "D"],
+  ["5-02-99-050-00", "Rent/Lease Expenses", "D"],
+  ["5-02-99-050-01", "Rents - Buildings and Structures", "D"],
+  ["5-02-99-050-02", "Rents - Land", "D"],
+  ["5-02-99-050-03", "Rents - Motor Vehicles", "D"],
+  ["5-02-99-050-04", "Rents - Equipment", "D"],
+  ["5-02-99-050-05", "Rents - Living Quarters", "D"],
+  ["5-02-99-050-06", "Operating Lease", "D"],
+  ["5-02-99-050-07", "Financial Lease", "D"],
+  ["5-02-99-060-00", "Membership Dues and Contributions to Organizations", "D"],
+  ["5-02-99-070-00", "Subscription Expenses", "D"],
+  ["5-02-99-080-00", "Donations", "D"],
+  ["5-02-99-090-00", "Litigation/Acquired Assets Expenses", "D"],
+  ["5-02-99-990-00", "Other Maintenance and Operating Expenses", "D"],
+  ["5-02-99-990-01", "Website Maintenance", "D"],
+  ["5-02-99-990-99", "Other Maintenance and Operating Expenses", "D"],
+  ["5-03-00-000-00", "Financial Expenses", "D"],
+  ["5-03-01-000-00", "Financial Expenses", "D"],
+  ["5-03-01-010-00", "Management Supervision/Trusteeship Fees", "D"],
+  ["5-03-01-020-00", "Interest Expenses", "D"],
+  ["5-03-01-020-01", "Interest Paid to Non Residents", "D"],
+  ["5-03-01-020-02", "Interest Paid to Residents other than General Government", "D"],
+  ["5-03-01-020-03", "Interest Paid to other General Government Units", "D"],
+  ["5-03-01-030-00", "Guarantee Fees", "D"],
+  ["5-03-01-040-00", "Bank Charges", "D"],
+  ["5-03-01-050-00", "Commitment Fees", "D"],
+  ["5-03-01-990-00", "Other Financial Charges", "D"],
+  ["5-04-00-000-00", "Direct Costs", "D"],
+  ["5-04-01-000-00", "Cost of Goods Manufactured", "D"],
+  ["5-04-01-010-00", "Direct Labor", "D"],
+  ["5-04-01-020-00", "Manufacturing Overhead", "D"],
+  ["5-04-02-010-00", "Cost of Sales", "D"],
+  ["5-05-00-000-00", "Non-Cash Expenses", "D"],
+  ["5-05-01-000-00", "Depreciation", "D"],
+  ["5-05-01-010-00", "Depreciation - Investment Property", "D"],
+  ["5-05-01-020-00", "Depreciation - Land Improvements", "D"],
+  ["5-05-01-020-01", "Depreciation - Aquaculture Structures", "D"],
+  ["5-05-01-020-02", "Depreciation - Reforestation Projects", "D"],
+  ["5-05-01-020-99", "Depreciation - Other Land Improvements", "D"],
+  ["5-05-01-030-00", "Depreciation - Infrastructure Assets", "D"],
+  ["5-05-01-030-01", "Depreciation - Road Networks", "D"],
+  ["5-05-01-030-02", "Depreciation - Flood Control Systems", "D"],
+  ["5-05-01-030-03", "Depreciation - Sewer Systems", "D"],
+  ["5-05-01-030-04", "Depreciation - Water Supply Systems", "D"],
+  ["5-05-01-030-05", "Depreciation - Power Supply Systems", "D"],
+  ["5-05-01-030-06", "Depreciation - Communication Networks", "D"],
+  ["5-05-01-030-07", "Depreciation - Seaport Systems", "D"],
+  ["5-05-01-030-08", "Depreciation - Airport Systems", "D"],
+  ["5-05-01-030-09", "Depreciation - Parks, Plazas and Monuments", "D"],
+  ["5-05-01-030-99", "Depreciation - Other Infrastructure Assets", "D"],
+  ["5-05-01-040-00", "Depreciation - Buildings and Other Structures", "D"],
+  ["5-05-01-040-01", "Depreciation - Buildings", "D"],
+  ["5-05-01-040-02", "Depreciation - School Buildings", "D"],
+  ["5-05-01-040-03", "Depreciation - Hospitals and Health Centers", "D"],
+  ["5-05-01-040-04", "Depreciation - Markets", "D"],
+  ["5-05-01-040-05", "Depreciation - Slaughterhouses", "D"],
+  ["5-05-01-040-06", "Depreciation - Hostels and Dormitories", "D"],
+  ["5-05-01-040-99", "Depreciation - Other Structures", "D"],
+  ["5-05-01-050-00", "Depreciation - Machinery and Equipment", "D"],
+  ["5-05-01-050-01", "Depreciation - Machinery", "D"],
+  ["5-05-01-050-02", "Depreciation - Office Equipment", "D"],
+  ["5-05-01-050-03", "Depreciation - ICT Equipment", "D"],
+  ["5-05-01-050-04", "Depreciation - Agricultural and Forestry Equipment", "D"],
+  ["5-05-01-050-05", "Depreciation - Marine and Fishery Equipment", "D"],
+  ["5-05-01-050-06", "Depreciation - Airport Equipment", "D"],
+  ["5-05-01-050-07", "Depreciation - Communication Equipment", "D"],
+  ["5-05-01-050-08", "Depreciation - Construction and Heavy Equipment", "D"],
+  ["5-05-01-050-09", "Depreciation - Disaster Response and Rescue Equipment", "D"],
+  ["5-05-01-050-10", "Depreciation - Military, Police and Security Equipment", "D"],
+  ["5-05-01-050-11", "Depreciation - Medical Equipment", "D"],
+  ["5-05-01-050-12", "Depreciation - Printing Equipment", "D"],
+  ["5-05-01-050-13", "Depreciation - Sports Equipment", "D"],
+  ["5-05-01-050-14", "Depreciation - Technical and Scientific Equipment", "D"],
+  ["5-05-01-050-99", "Depreciation - Other Machinery and Equipment", "D"],
+  ["5-05-01-060-00", "Depreciation - Transportation Equipment", "D"],
+  ["5-05-01-060-01", "Depreciation - Motor Vehicles", "D"],
+  ["5-05-01-060-02", "Depreciation - Trains", "D"],
+  ["5-05-01-060-03", "Depreciation - Aircrafts and Aircrafts Ground Equipment", "D"],
+  ["5-05-01-060-04", "Depreciation - Watercrafts", "D"],
+  ["5-05-01-060-99", "Depreciation - Other Transportation Equipment", "D"],
+  ["5-05-01-070-00", "Depreciation - Furniture, Fixtures and Books", "D"],
+  ["5-05-01-070-01", "Depreciation - Furniture and Fixtures", "D"],
+  ["5-05-01-070-02", "Depreciation - Books", "D"],
+  ["5-05-01-080-00", "Depreciation - Leased Assets", "D"],
+  ["5-05-01-080-01", "Depreciation - Leased Assets, Buildings and Other Structures", "D"],
+  ["5-05-01-080-02", "Depreciation - Leased Assets, Machinery and Equipment", "D"],
+  ["5-05-01-080-03", "Depreciation - Leased Assets, Transportation Equipment", "D"],
+  ["5-05-01-080-99", "Depreciation - Other Leased Assets", "D"],
+  ["5-05-01-090-00", "Depreciation - Leased Assets Improvements(LAI)", "D"],
+  ["5-05-01-090-01", "Depreciation - LAI, Land", "D"],
+  ["5-05-01-090-02", "Depreciation - LAI, Buildings", "D"],
+  ["5-05-01-090-99", "Depreciation - Other Leased Assets Improvements", "D"],
+  ["5-05-01-100-00", "Depreciation - Heritage Assets", "D"],
+  ["5-05-01-100-01", "Depreciation - Historical Buildings", "D"],
+  ["5-05-01-100-02", "Depreciation - Works of Arts and Archeological Specimens", "D"],
+  ["5-05-01-100-99", "Depreciation - Other Heritage Assets", "D"],
+  ["5-05-01-110-00", "Depreciation - Service Concession Asset", "D"],
+  ["5-05-01-990-00", "Depreciation - Other Property, Plant and Equipment", "D"],
+  ["5-05-01-990-01", "Depreciation - Work/Zoo Animals", "D"],
+  ["5-05-01-990-99", "Depreciation - Other Property, Plant and Equipment", "D"],
+  ["5-05-02-000-00", "Amortization", "D"],
+  ["5-05-02-010-00", "Amortization - Intangible Assets", "D"],
+  ["5-05-02-010-01", "Amortization - Patents/Copyrights", "D"],
+  ["5-05-02-010-02", "Amortization - Computer Software", "D"],
+  ["5-05-02-010-99", "Amortization - Other Intagible Assets", "D"],
+  ["5-05-03-000-00", "Impairment Loss", "D"],
+  ["5-05-03-010-00", "Impairment Loss - Financial Assets Held to Maturity", "D"],
+  ["5-05-03-020-00", "Impairment Loss - Loans and Receivables", "D"],
+  ["5-05-03-030-00", "Impairment Loss - Lease Receivables", "D"],
+  ["5-05-03-040-00", "Impairment Loss - Investments in GOCCs", "D"],
+  ["5-05-03-050-00", "Impairment Loss - Investments in Joint Venture", "D"],
+  ["5-05-03-060-00", "Impairment Loss - Other Receivables", "D"],
+  ["5-05-03-070-00", "Impairment Loss - Inventories", "D"],
+  ["5-05-03-080-00", "Impairment Loss - Investment Property", "D"],
+  ["5-05-03-090-00", "Impairment Loss - Property, Plant and Equipment", "D"],
+  ["5-05-03-100-00", "Impairment Loss - Biological Assets", "D"],
+  ["5-05-03-110-00", "Impairment Loss - Intangible Assets", "D"],
+  ["5-05-03-120-00", "Impairment Loss - Investments in Associates", "D"],
+  ["5-05-03-990-00", "Impairment Loss - Other Assets", "D"],
+  ["5-05-04-000-00", "Losses", "D"],
+  ["5-05-04-010-00", "Loss on Foreign Exchange (FOREX)", "D"],
+  ["5-05-04-020-00", "Loss on Sale of Investments", "D"],
+  ["5-05-04-030-00", "Loss on Sale of Investment Property", "D"],
+  ["5-05-04-040-00", "Loss on Sale of Property, Plant and Equipment", "D"],
+  ["5-05-04-050-00", "Loss on Sale of Biological Assets", "D"],
+  ["5-05-04-060-00", "Loss on Sale of Agricultural Produce", "D"],
+  ["5-05-04-070-00", "Loss on Sale of Intangible Assets", "D"],
+  ["5-05-04-080-00", "Loss on Sale of Assets", "D"],
+  ["5-05-04-090-00", "Loss of Assets", "D"],
+  ["5-05-04-100-00", "Loss on Guaranty", "D"],
+  ["5-05-04-990-00", "Other Losses", "D"],
+  ["5-06-00-000-00", "Capital Outlays", "D"],
+  ["5-06-01-000-00", "Investment Outlay", "D"],
+  ["5-06-01-010-00", "Investment in Government-Owned and/or Controlled Corporations", "D"],
+  ["5-06-01-010-01", "Investment in Government-Owned and/or Controlled Corporations", "D"],
+  ["5-06-01-010-02", "Investment in GOCC - Road Networks", "D"],
+  ["5-06-01-010-03", "Investment in GOCC - Flood Control Systems", "D"],
+  ["5-06-01-010-04", "Investment in GOCC - Sewer Systems", "D"],
+  ["5-06-01-010-05", "Investment in GOCC - Water Supply Systems", "D"],
+  ["5-06-01-010-06", "Investment in GOCC - Power Supply Systems", "D"],
+  ["5-06-01-010-07", "Investment in GOCC - Communication Networks", "D"],
+  ["5-06-01-010-08", "Investment in GOCC - Seaport Systems", "D"],
+  ["5-06-01-010-09", "Investment in GOCC - Airport Systems", "D"],
+  ["5-06-01-010-10", "Investment in GOCC - Parks, Plazas and Monuments", "D"],
+  ["5-06-01-010-99", "Investment ion GOCC - Other Infrastructure Assets", "D"],
+  ["5-06-01-020-00", "Investment in Associates", "D"],
+  ["5-06-02-000-00", "Loans Outlay", "D"],
+  ["5-06-02-010-00", "Loans Outlay - Government-Owned and/or Controlled Corporations", "D"],
+  ["5-06-02-020-00", "Loans Outlay - Local Government Units", "D"],
+  ["5-06-02-990-00", "Loans Outlay - Others", "D"],
+  ["5-06-03-000-00", "Investment Property Outlay", "D"],
+  ["5-06-03-010-00", "Land and Buildings Outlay", "D"],
+  ["5-06-03-010-01", "Investment Property - Land", "D"],
+  ["5-06-03-010-02", "Investment Property - Buildings", "D"],
+  ["5-06-04-000-00", "Property, Plant and Equipment Outlay", "D"],
+  ["5-06-04-010-00", "Land Outlay", "D"],
+  ["5-06-04-010-01", "Land", "D"],
+  ["5-06-04-020-00", "Land Improvements Outlay", "D"],
+  ["5-06-04-020-01", "Aquaculture Structures", "D"],
+  ["5-06-04-020-02", "Reforestation Projects", "D"],
+  ["5-06-04-020-99", "Other Land Improvements", "D"],
+  ["5-06-04-030-00", "Infrastructure Outlay", "D"],
+  ["5-06-04-030-01", "Road Networks", "D"],
+  ["5-06-04-030-02", "Flood Control Systems", "D"],
+  ["5-06-04-030-03", "Sewer Systems", "D"],
+  ["5-06-04-030-04", "Water Supply Systems", "D"],
+  ["5-06-04-030-05", "Power Supply Systems", "D"],
+  ["5-06-04-030-06", "Communication Networks", "D"],
+  ["5-06-04-030-07", "Seaport Systems", "D"],
+  ["5-06-04-030-08", "Airport Systems", "D"],
+  ["5-06-04-030-09", "Parks, Plazas and Monuments", "D"],
+  ["5-06-04-030-99", "Other Infrastructure Assets", "D"],
+  ["5-06-04-040-00", "Buildings and Other Structures Outlay", "D"],
+  ["5-06-04-040-01", "Buildings", "D"],
+  ["5-06-04-040-02", "School Buildings", "D"],
+  ["5-06-04-040-03", "Hospitals and Health Centers", "D"],
+  ["5-06-04-040-04", "Markets", "D"],
+  ["5-06-04-040-05", "Slaughterhouses", "D"],
+  ["5-06-04-040-06", "Hostels and Dormitories", "D"],
+  ["5-06-04-040-07", "Ground Water Monitoring Stations", "D"],
+  ["5-06-04-040-99", "Other Structures", "D"],
+  ["5-06-04-050-00", "Machinery and Equipment Outlay", "D"],
+  ["5-06-04-050-01", "Machinery", "D"],
+  ["5-06-04-050-02", "Office Equipment", "D"],
+  ["5-06-04-050-03", "Information and Communication Technology Equipment", "D"],
+  ["5-06-04-050-04", "Agricultural and Forestry Equipment", "D"],
+  ["5-06-04-050-05", "Marine and Fishery Equipment", "D"],
+  ["5-06-04-050-06", "Airport Equipment", "D"],
+  ["5-06-04-050-07", "Communication Equipment", "D"],
+  ["5-06-04-050-08", "Construction and Heavy Equipment", "D"],
+  ["5-06-04-050-09", "Disaster Response and Rescue Equipment", "D"],
+  ["5-06-04-050-10", "Military, Police and Security Equipment", "D"],
+  ["5-06-04-050-11", "Medical Equipment", "D"],
+  ["5-06-04-050-12", "Printing Equipment", "D"],
+  ["5-06-04-050-13", "Sports Equipment", "D"],
+  ["5-06-04-050-14", "Technical and Scientific Equipment", "D"],
+  ["5-06-04-050-99", "Other Machinery and Equipment", "D"],
+  ["5-06-04-060-00", "Transportation Equipment Outlay", "D"],
+  ["5-06-04-060-01", "Motor Vehicles", "D"],
+  ["5-06-04-060-02", "Trains", "D"],
+  ["5-06-04-060-03", "Aircrafts and Aircrafts Ground Equipment", "D"],
+  ["5-06-04-060-04", "Watercrafts", "D"],
+  ["5-06-04-060-99", "Other Transportation Equipment", "D"],
+  ["5-06-04-070-00", "Furniture, Fixtures and Books Outlay", "D"],
+  ["5-06-04-070-01", "Furniture and Fixtures", "D"],
+  ["5-06-04-070-02", "Books", "D"],
+  ["5-06-04-080-00", "Heritage Assets", "D"],
+  ["5-06-04-080-01", "Historical Buildings", "D"],
+  ["5-06-04-080-02", "Works of Arts and Archeological Specimens", "D"],
+  ["5-06-04-080-99", "Other Heritage Assets", "D"],
+  ["5-06-04-090-00", "Other Property Plant and Equipment Outlay", "D"],
+  ["5-06-04-090-01", "Work/Zoo Animals", "D"],
+  ["5-06-04-090-99", "Other Property, Plant and Equipment", "D"],
+  ["5-06-05-000-00", "Biological Assets Outlay", "D"],
+  ["5-06-05-010-00", "Bearer Biological Assets Outlay", "D"],
+  ["5-06-05-010-01", "Breeding Stocks", "D"],
+  ["5-06-05-010-02", "Livestock", "D"],
+  ["5-06-05-010-03", "Trees, Plants and Crops", "D"],
+  ["5-06-05-010-04", "Aquaculture", "D"],
+  ["5-06-05-010-99", "Other Bearer Biological Assets", "D"],
+  ["5-06-06-000-00", "Intangible Assets Outlay", "D"],
+  ["5-06-06-010-00", "Patents/Copyrights", "D"],
+  ["5-06-06-020-00", "Computer Software", "D"],
+  ["5-06-06-990-00", "Other Intangible Assets", "D"]
+];
+
+/**
+ * PDF export. The voucher is drawn on a temporary Google Sheet (same 33-column grid as the
+ * Appendix 32 form), exported with the Sheets PDF endpoint, saved to Drive and returned
+ * to the browser as a download. The temporary sheet is trashed afterwards.
+ */
+const NCOL = 34, CW = 21;           // grid: 34 columns (even, so C and D split the page 50/50)
+const TNR = 'Times New Roman';
+const PAGE_H_PX = Math.round((13 - 0.8) * 96);  // printable height of a folio page (13 in minus 0.4 in margins) at 96 px/in
+
+
+
+
+function placeImage_(sh, blob, row) {
+  const img = sh.insertImage(blob, 1, row);
+  const w = NCOL * CW, h = Math.round(img.getHeight() * (w / img.getWidth()));
+  img.setWidth(w).setHeight(h);
+  sh.getRange(row, 1).setValue(' ');            // makes sure the row is inside the print range
+  return h;
+}
+
+function ld_(s) {
+  if (!s) return '';
+  const p = String(s).split('-');
+  return Utilities.formatDate(new Date(+p[0], +p[1] - 1, +p[2]), Session.getScriptTimeZone(), 'MMMM d, yyyy');
+}
+const linesOf_ = (s, n) => String(s || '').split('\n').reduce((t, l) => t + Math.max(1, Math.ceil(l.length / n)), 0);
+
+function rich_(segs) {   // segs: [[text, {b:1, s:fontSize}], ...]
+  const b = SpreadsheetApp.newRichTextValue();
+  b.setText(segs.map(s => s[0]).join(''));
+  let p = 0;
+  segs.forEach(s => {
+    const o = s[1] || {};
+    if (s[0].length) b.setTextStyle(p, p + s[0].length,
+      SpreadsheetApp.newTextStyle().setFontFamily(TNR).setBold(!!o.b).setUnderline(!!o.u).setFontSize(o.s || 11).build());
+    p += s[0].length;
+  });
+  return b.build();
+}
+
+function drawVoucher_(sh, r) {
+  if (sh.getMaxColumns() < NCOL) sh.insertColumnsAfter(sh.getMaxColumns(), NCOL - sh.getMaxColumns());
+  sh.setColumnWidths(1, NCOL, CW);
+  sh.setHiddenGridlines(true);
+  sh.getRange(1, 1, 150, NCOL).setFontFamily(TNR).setFontSize(11).setVerticalAlignment('middle');
+
+  const SOLID = SpreadsheetApp.BorderStyle.SOLID;
+  const hs = {}, fixed = {};
+  const rh = (row, px, fix) => { hs[row] = px; if (fix) fixed[row] = true; };
+  const lv = (label, value) => [[label, { b: 1 }], [value || '']];
+  function put(r1, c1, r2, c2, v, o) {
+    o = o || {};
+    const rg = sh.getRange(r1, c1, r2 - r1 + 1, c2 - c1 + 1);
+    if (r2 > r1 || c2 > c1) rg.merge();
+    const bd = o.bd || [true, true, true, true];
+    rg.setBorder(bd[0], bd[1], bd[2], bd[3], false, false, '#000000', SOLID);
+    rg.setHorizontalAlignment(o.h || 'left').setVerticalAlignment(o.v || 'middle').setWrap(true);
+    if (o.bold) rg.setFontWeight('bold');
+    if (o.size) rg.setFontSize(o.size);
+    const cell = sh.getRange(r1, c1);
+    if (o.num) { cell.setNumberFormat(o.fmt || '#,##0.00'); cell.setValue(Number(v) || 0); }
+    else {
+      cell.setNumberFormat('@');
+      if (Array.isArray(v)) cell.setRichTextValue(rich_(v)); else cell.setValue(v == null ? '' : String(v));
+    }
+  }
+
+  let y = 1;
+  const hdr = imageBlob_(HEADER_IMAGE_ID);
+  if (hdr) { rh(y, placeImage_(sh, hdr, y), true); y++; }
+
+  // Title block + fund cluster / date / DV no.
+  put(y, 1, y + 2, 26, 'DISBURSEMENT VOUCHER', { h: 'center', bold: 1, size: 16 });
+  put(y, 27, y, 34, lv('Fund Cluster : ', r.fund));
+  put(y + 1, 27, y + 1, 34, lv('Date : ', ld_(r.date)));
+  put(y + 2, 27, y + 2, 34, lv('DV No. : ', r.dvNo));
+  [0, 1, 2].forEach(i => rh(y + i, 26)); y++; y += 2;
+
+  // Narrow wrapped label column (4 cols) so the input side gets the space
+  const LBL = 4;
+  const bx = (v, label) => (r.mode === v ? '☒ ' : '☐ ') + label;
+  put(y, 1, y, LBL, 'Mode of Payment', { bold: 1 });
+  put(y, LBL + 1, y, 34, bx('MDS Check', 'MDS Check') + '   ' + bx('Commercial Check', 'Commercial Check') + '   ' + bx('ADA', 'ADA') + '   ' +
+    bx('Others', 'Others (Please specify)') + (r.mode === 'Others' && r.modeOther ? ' ' + r.modeOther : ''));
+  rh(y, 34); y++;
+
+  put(y, 1, y, LBL, 'Payee', { bold: 1 }); put(y, LBL + 1, y, 19, r.payee, { bold: 1 });
+  put(y, 20, y, 27, 'TIN/Employee No.: ' + (r.tin || '')); put(y, 28, y, 34, 'ORS/BURS No.: ' + (r.ors || '')); rh(y, 30); y++;
+  put(y, 1, y, LBL, 'Address', { bold: 1 }); put(y, LBL + 1, y, 34, r.address); rh(y, 24); y++;
+
+  // Particulars
+  put(y, 1, y, 18, 'Particulars', { h: 'center' }); put(y, 19, y, 23, 'Responsibility Center', { h: 'center' });
+  put(y, 24, y, 28, 'MFO/PAP', { h: 'center' }); put(y, 29, y, 34, 'Amount', { h: 'center' }); rh(y, 30); y++;
+  const adj = Number(r.adj) || 0;
+  put(y, 1, y, 18, r.desc || '', { v: 'top' }); put(y, 19, y, 23, r.rc || '', { v: 'top' }); put(y, 24, y, 28, r.mfo || '', { v: 'top' });
+  put(y, 29, y, 34, r.amt ? +r.amt : '', { num: !!r.amt, h: 'right', v: 'top' });
+  rh(y, Math.max(48, linesOf_(r.desc, 52) * 15 + 12)); y++;
+  if (adj) {   // adjustment row only appears when there is an adjustment
+    put(y, 1, y, 18, (r.adjLabel || 'Less: Withholding Tax') + (r.taxDesc ? ' (' + r.taxDesc + ')' : ''), { h: 'right' }); put(y, 19, y, 23, ''); put(y, 24, y, 28, '');
+    put(y, 29, y, 34, -adj, { num: 1, fmt: '#,##0.00;(#,##0.00)', h: 'right' }); rh(y, 24); y++;
+  }
+  put(y, 1, y, 28, 'Amount Due', { bold: 1, h: 'center' }); put(y, 29, y, 34, r.total, { num: 1, bold: 1, h: 'right' }); rh(y, 22); y++;
+
+  // Section letters sit in their own small box: |A.| text
+  const tag = (row, c, L) => put(row, c, row, c + 1, L + '.', { bold: 1, h: 'center' });
+
+  // A. Certified by supervisor (no signature underline; the space is left for signing)
+  tag(y, 1, 'A'); put(y, 3, y, 34, 'Certified: Expenses/Cash Advance necessary, lawful and incurred under my direct supervision.'); rh(y, 24); y++;
+  put(y, 1, y, 34, [[r.supName || '', { b: 1 }], ['\n' + (r.supDesig || ''), { b: 0 }]], { h: 'center', v: 'bottom', bd: [false, true, true, true] }); rh(y, 70); y++;   // name and designation together, no gap
+
+  // B. Accounting entry (minimum 2 rows, maximum 16)
+  tag(y, 1, 'B'); put(y, 3, y, 34, 'Accounting Entry:'); rh(y, 22); y++;
+  put(y, 1, y, 18, 'Account Title', { h: 'center' }); put(y, 19, y, 24, 'UACS Code', { h: 'center' });
+  put(y, 25, y, 29, 'Debit', { h: 'center' }); put(y, 30, y, 34, 'Credit', { h: 'center' }); rh(y, 20); y++;
+  const ac = (r.acct || []).slice(0, 16); while (ac.length < 2) ac.push({});
+  let dr = 0, cr = 0;
+  ac.forEach(a => {
+    dr += +a.dr || 0; cr += +a.cr || 0;
+    put(y, 1, y, 18, a.title || ''); put(y, 19, y, 24, a.uacs || '', { h: 'center' });
+    put(y, 25, y, 29, a.dr ? +a.dr : '', { num: !!a.dr, h: 'right' }); put(y, 30, y, 34, a.cr ? +a.cr : '', { num: !!a.cr, h: 'right' });
+    rh(y, Math.max(20, linesOf_(a.title, 46) * 15 + 4)); y++;
+  });
+  put(y, 1, y, 18, ''); put(y, 19, y, 24, 'TOTAL', { h: 'center', bold: 1 });
+  put(y, 25, y, 29, dr, { num: 1, h: 'right', bold: 1 }); put(y, 30, y, 34, cr, { num: 1, h: 'right', bold: 1 }); rh(y, 20); y++;
+
+  // C. Certified / D. Approved: two equal halves (17 columns each)
+  tag(y, 1, 'C'); put(y, 3, y, 17, 'Certified:', { bold: 1 });
+  tag(y, 18, 'D'); put(y, 20, y, 34, 'Approved for Payment', { bold: 1 }); rh(y, 22, true); y++;
+  const ck = b => b ? '☒ ' : '☐ ';
+  put(y, 1, y + 2, 17, ck(r.cCash) + 'Cash available\n' + ck(r.cAda) + 'Subject to Authority to Debit Account (when applicable)\n' +
+    ck(r.cDocs) + 'Supporting documents complete and amount claimed proper', { v: 'middle' });
+  put(y, 18, y + 1, 34, r.netWords || '', { v: 'top', h: 'left', bd: [true, true, false, true] });
+  put(y + 2, 18, y + 2, 34, r.total || '', { num: !!r.total, bold: 1, h: 'right', v: 'bottom', bd: [false, true, true, true] });
+  [0, 1, 2].forEach(i => rh(y + i, 36, true)); y += 3;
+
+  // Signatories: label column 3 cols wide (wraps "Printed / Name"), 14 cols for the entry, identical on both halves
+  const LC = 3;
+  const sig = (label, left, right, h, bold) => {
+    put(y, 1, y, LC, label, { h: 'center' }); put(y, LC + 1, y, 17, left, { h: 'center', bold: bold });
+    put(y, 18, y, 17 + LC, label, { h: 'center' }); put(y, 18 + LC, y, 34, right, { h: 'center', bold: bold }); rh(y, h); y++;
+  };
+  sig('Signature', '', '', 38); sig('Printed\nName', r.accName, r.agName, 36, 1);
+  put(y, 1, y + 1, LC, 'Position', { h: 'center' }); put(y, LC + 1, y, 17, r.accPos, { h: 'center' });
+  put(y, 18, y + 1, 17 + LC, 'Position', { h: 'center' }); put(y, 18 + LC, y, 34, r.agPos, { h: 'center' }); rh(y, 22); y++;
+  put(y, LC + 1, y, 17, 'Head, Accounting Unit/Authorized Representative', { h: 'center' });
+  put(y, 18 + LC, y, 34, 'Agency Head/Authorized Representative', { h: 'center' }); rh(y, 34); y++;
+  sig('Date', ld_(r.accDate), ld_(r.agDate), 22);
+
+  // E. Receipt of payment: labels at the top, empty space below for handwriting / stamps
+  tag(y, 1, 'E'); put(y, 3, y, 34, 'Receipt of Payment', { bold: 1 }); rh(y, 22); y++;
+  put(y, 1, y, 9, 'Check/ADA No.:' + (r.checkNo ? '\n' + r.checkNo : ''), { v: 'top' });
+  put(y, 10, y, 17, 'Date:' + (r.checkDate ? '\n' + ld_(r.checkDate) : ''), { v: 'top' });
+  put(y, 18, y, 28, 'Bank Name & Account Number:' + (r.bank ? '\n' + r.bank : ''), { v: 'top' });
+  put(y, 29, y, 34, 'JEV No.:' + (r.jev ? '\n' + r.jev : ''), { v: 'top' }); rh(y, 46); y++;
+  put(y, 1, y, 9, 'Signature:', { v: 'top' });
+  put(y, 10, y, 17, 'Date:' + (r.recDate ? '\n' + ld_(r.recDate) : ''), { v: 'top' });
+  put(y, 18, y, 28, 'Printed Name:' + (r.recName ? '\n' + r.recName : ''), { v: 'top' });
+  put(y, 29, y, 34, 'Date:' + (r.jevDate ? '\n' + ld_(r.jevDate) : ''), { v: 'top' }); rh(y, 46); y++;
+  put(y, 1, y, 34, 'Official Receipt No. & Date/Other Documents:' + (r.orNo ? '\n' + r.orNo : ''), { v: 'top' }); rh(y, 40); y++;
+
+  // Footer image
+  const ftr = imageBlob_(FOOTER_IMAGE_ID);
+  if (ftr) { rh(y, 6, true); y++; rh(y, placeImage_(sh, ftr, y), true); y++; }
+
+  // Stretch text rows so the voucher fills a folio page (images keep their own height).
+  const rows = Object.keys(hs).map(Number);
+  let fixedSum = 0, flexSum = 0;
+  rows.forEach(k => { if (fixed[k]) fixedSum += hs[k]; else flexSum += hs[k]; });
+  const f = Math.max(1, Math.min(1.7, (PAGE_H_PX - fixedSum - 24) / flexSum));
+  rows.forEach(k => sh.setRowHeight(k, fixed[k] ? hs[k] : Math.round(hs[k] * f)));
+}
+
+
+/* ===== ORS (Obligation Request and Status): A4, Times New Roman 11, min 0.5 in left/right margins ===== */
+const ORS_SPEC = { W: 595, H: 842, M: 36, NCOL: 36, CW: 19.3, fam: 'serif' };   // 36 x 19.3 px = 521 pt wide -> about 0.5 in each side
+const sd_ = s => { const p = String(s || '').split('-'); return p.length < 3 ? '' : p[1] + '/' + p[2] + '/' + p[0]; };
+const uacsOut_ = u => { const d = String(u || '').replace(/\D/g, ''); return d.length === 10 ? d : String(u || '').trim(); };
+
+function placeInBox_(sh, blob, row, boxW, boxH, pad, vtop) {   // fits an image inside a box, centred, keeps the aspect ratio
+  const img = sh.insertImage(blob, 1, row), iw = img.getWidth(), ih = img.getHeight();
+  const k = Math.min((boxW - 2 * pad) / iw, (boxH - 2 * pad) / ih);
+  const w = Math.round(iw * k), h = Math.round(ih * k);
+  img.setWidth(w).setHeight(h);
+  img.setAnchorCellXOffset(Math.round((boxW - w) / 2)).setAnchorCellYOffset(vtop ? 0 : Math.round((boxH - h) / 2));
+  return h;
+}
+
+function drawOrs_(sh, r) {
+  FAM = famNow();   // so text can be measured in the chosen font
+  const N = ORS_SPEC.NCOL, CWo = ORS_SPEC.CW, FS = 11, SOLID = SpreadsheetApp.BorderStyle.SOLID;
+  sh.setColumnWidths(1, N, CWo);
+  sh.getRange(1, 1, 150, N).setFontFamily(TNR).setFontSize(FS).setVerticalAlignment('middle');
+  const hs = {};
+  const rh = (row, px) => { hs[row] = px; };
+  const RT = (...p) => p.map(x => [x[0], { b: x[1] ? 1 : 0, s: FS }]);
+  function put(r1, c1, r2, c2, v, o) {
+    o = o || {};
+    const rg = sh.getRange(r1, c1, r2 - r1 + 1, c2 - c1 + 1);
+    if (r2 > r1 || c2 > c1) rg.merge();
+    const bd = o.bd || [true, true, true, true];
+    rg.setBorder(bd[0], bd[1], bd[2], bd[3], false, false, '#000000', SOLID);
+    rg.setHorizontalAlignment(o.h || 'left').setVerticalAlignment(o.v || 'middle').setWrap(true);
+    if (o.bold) rg.setFontWeight('bold');
+    if (o.size) rg.setFontSize(o.size);
+    const cell = sh.getRange(r1, c1);
+    if (o.num) { cell.setNumberFormat('#,##0.00'); cell.setValue(Number(v) || 0); }
+    else { cell.setNumberFormat('@'); if (Array.isArray(v)) cell.setRichTextValue(rich_(v)); else cell.setValue(v == null ? '' : String(v)); }
+  }
+
+  let y = 1;
+  // ---- header, laid out like the voucher: banner image across the top, then title (left) and serial / date / fund (right)
+  const hb = imageBlob_('orsheader');
+  if (hb) { const h = placeInBox_(sh, hb, y, N * CWo, 130, 0, true); rh(y, h); y++; }
+  const LW = 26;
+  put(y, 1, y + 2, LW, 'OBLIGATION REQUEST AND STATUS', { h: 'center', bold: 1, size: 16 });
+  put(y, LW + 1, y, N, RT(['Serial No. : ', 1], [r.serial || '', 0]));
+  put(y + 1, LW + 1, y + 1, N, RT(['Date : ', 1], [ld_(r.date), 0]));
+  put(y + 2, LW + 1, y + 2, N, RT(['Fund Cluster : ', 1], [r.fund || '', 0]));
+  rh(y, 22); rh(y + 1, 22); rh(y + 2, 22); y += 3;
+
+  // ---- payee / office / address
+  [['Payee', r.payee, 1], ['Office', r.office, 0], ['Address', r.address, 0]].forEach(a => {
+    put(y, 1, y, 5, a[0], { h: 'center' }); put(y, 6, y, N, a[1] || '', { bold: a[2] }); rh(y, 26); y++;
+  });
+
+  // ---- particulars table: same style as the accounting entry on the voucher (bordered rows, min 2, max 16)
+  put(y, 1, y, 5, 'Responsibility Center', { h: 'center' }); put(y, 6, y, 18, 'Particulars', { h: 'center' });
+  put(y, 19, y, 22, 'MFO/PAP', { h: 'center' }); put(y, 23, y, 27, 'UACS Object Code', { h: 'center' }); put(y, 28, y, N, 'Amount', { h: 'center' }); rh(y, 34); y++;
+  const items = (r.items || []).slice(0, 16); if (!items.length) items.push({});   // one row per entry (a single blank row when empty)
+  items.forEach(it => {
+    const amt = +it.amt || 0;
+    put(y, 1, y, 5, it.rc || '', { h: 'center' }); put(y, 6, y, 18, it.title || ''); put(y, 19, y, 22, it.mfo || '', { h: 'center' });
+    put(y, 23, y, 27, uacsOut_(it.uacs), { h: 'center' }); put(y, 28, y, N, amt || '', { num: !!amt, h: 'right' }); rh(y, 22); y++;
+  });
+  put(y, 1, y, 27, 'Total', { h: 'right' }); put(y, 28, y, N, r.total || 0, { num: 1, bold: 1, h: 'right' }); rh(y, 22); y++;
+
+  // ---- A. / B. certifications: boxed letters, underlined entries, one vertical divider down the middle (font size 10)
+  const H2 = 18, AB = 10;
+  const RA = (...p) => p.map(x => [x[0], { b: x[1] ? 1 : 0, s: AB }]);
+  const seg = (row, c1, c2, val, o, e) => {   // e = { t: top edge, l: left edge, r: right edge }
+    o = o || {}; e = e || {};
+    put(row, c1, row, c2, val, { h: o.h, v: o.v, bold: o.bold, size: AB, bd: [!!e.t, !!e.l, !!o.ul, !!e.r] });
+  };
+  const half = (row, c0, label, val, o) => {   // label | underlined entry | gap
+    o = o || {};
+    seg(row, c0, c0 + 5, label, { v: o.lv || 'bottom' }, { l: c0 === 1 });
+    seg(row, c0 + 6, c0 + 16, val, { h: 'center', v: o.vv || 'bottom', bold: o.bold, ul: !o.nul }, {});
+    seg(row, c0 + 17, c0 + 17, '', {}, { r: true });
+  };
+  const certA = 'Charges to appropriation/allotment are necessary, lawful and under my direct supervision; and supporting documents valid, proper and legal';
+  const certB = 'Allotment available and obligated for the purpose/adjustment necessary as indicated above';
+  put(y, 1, y, 2, 'A.', { h: 'center', bold: 1, v: 'top', size: AB }); seg(y, 3, H2, RA(['Certified: ', 1], [certA, 0]), { v: 'top' }, { t: 1, r: 1 });
+  put(y, 19, y, 20, 'B.', { h: 'center', bold: 1, v: 'top', size: AB }); seg(y, 21, N, RA(['Certified: ', 1], [certB, 0]), { v: 'top' }, { t: 1, r: 1 });
+  rh(y, 54); y++;
+  half(y, 1, 'Signature :', ''); half(y, 19, 'Signature :', ''); rh(y, 36); y++;
+  half(y, 1, 'Printed Name :', r.supName, { bold: 1 }); half(y, 19, 'Printed Name :', r.budName, { bold: 1 }); rh(y, 22); y++;
+  // position and the "Head, ..." line in one cell: no gap between them, no underline
+  half(y, 1, 'Position :', RA([r.supPos || '', 0], ['\nHead, Requesting Office/Authorized Representative', 0]), { nul: 1, lv: 'top', vv: 'top' });
+  half(y, 19, 'Position :', RA([r.budPos || '', 0], ['\nHead, Budget Division/Unit/Authorized Representative', 0]), { nul: 1, lv: 'top', vv: 'top' });
+  rh(y, 44); y++;
+  half(y, 1, 'Date :', ld_(r.supDate)); half(y, 19, 'Date :', ld_(r.budDate)); rh(y, 24); y++;
+  seg(y, 1, 17, '', { ul: 1 }, { l: 1 }); seg(y, 18, 18, '', { ul: 1 }, { r: 1 }); seg(y, 19, 35, '', { ul: 1 }, {}); seg(y, 36, 36, '', { ul: 1 }, { r: 1 });   // closes the block under the date underline
+  rh(y, 6); y++;
+
+  // ---- C. status of obligation (the data row stretches: lots of room for stamping / handwriting when blank)
+  const HD = 10;   // table headers: size 10
+  put(y, 1, y, 2, 'C.', { h: 'center', bold: 1 }); put(y, 3, y, N, 'STATUS OF OBLIGATION', { h: 'center', bold: 1 }); rh(y, 22); y++;
+  put(y, 1, y, 16, 'Reference', { h: 'center', bold: 1, size: HD }); put(y, 17, y, N, 'Amount', { h: 'center', bold: 1, size: HD }); rh(y, 20); y++;
+  put(y, 1, y + 2, 4, 'Date', { h: 'center', size: HD }); put(y, 5, y + 2, 10, 'Particulars', { h: 'center', size: HD }); put(y, 11, y + 2, 16, 'ORS/JEV/Check/\nADA/TRA No.', { h: 'center', size: HD });
+  put(y, 17, y + 1, 20, 'Obligation', { h: 'center', size: HD }); put(y, 21, y + 1, 24, 'Payable', { h: 'center', size: HD }); put(y, 25, y + 1, 28, 'Payment', { h: 'center', size: HD });
+  put(y, 29, y, N, 'Balance', { h: 'center', size: HD }); rh(y, 22); y++;
+  put(y, 29, y, 32, 'Not Yet Due', { h: 'center', size: HD }); put(y, 33, y, N, 'Due and Demandable', { h: 'center', size: HD }); rh(y, 34); y++;
+  [['(a)', 17, 20], ['(b)', 21, 24], ['(c)', 25, 28], ['(a-b)', 29, 32], ['(b-c)', 33, N]].forEach(l => put(y, l[1], y, l[2], l[0], { h: 'center', size: HD })); rh(y, 20); y++;
+  const nv = v => (v === '' || v == null || isNaN(+v)) ? null : +v;
+  const s0 = (r.status || [])[0] || {};
+  const a1 = nv(s0.ob), b1 = nv(s0.pay), c1 = nv(s0.pm);
+  const nyd = (a1 !== null || b1 !== null) ? (a1 || 0) - (b1 || 0) : null, due = (b1 !== null || c1 !== null) ? (b1 || 0) - (c1 || 0) : null;
+  // the longer the text, the smaller the type: 12 -> 11 -> 10 (the row grows if it still does not fit)
+  const fitSize = (text, cols) => {
+    const w = cols * CWo * 0.75 - 6;
+    for (const sz of [12, 11]) if (layout([{ t: String(text || ' '), b: 0, s: sz }], w, 1).length <= 5) return sz;
+    return 10;
+  };
+  const fillRow = y;
+  const m = (col1, col2, v) => put(y, col1, y, col2, v === null ? '' : v, { num: v !== null, h: 'right', v: 'top' });
+  put(y, 1, y, 4, sd_(s0.date), { h: 'center', v: 'top' });
+  put(y, 5, y, 10, s0.part || '', { v: 'top', size: fitSize(s0.part, 6) });
+  put(y, 11, y, 16, s0.ref || '', { h: 'center', v: 'top', size: fitSize(s0.ref, 6) });
+  m(17, 20, a1); m(21, 24, b1); m(25, 28, c1); m(29, 32, nyd); m(33, N, due); rh(y, 30); y++;
+
+  // ---- footer image placeholder (below the form)
+  const fb = imageBlob_('orsfooter');
+  if (fb) { rh(y, 6); y++; const h = placeInBox_(sh, fb, y, N * CWo, 90, 0, true); rh(y, h + 4); y++; }
+
+  Object.keys(hs).forEach(k => sh.setRowHeight(+k, hs[k]));
+  sh.fill = { row: fillRow, min: 30 };
+  return y - 1;
+}
+
+/* ===== offline runtime: browser storage instead of Apps Script ===== */
+const DB = {
+  get(k, d) { try { const v = localStorage.getItem('dv:' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('dv:' + k, JSON.stringify(v)); } catch (e) { throw new Error('Browser storage is full. Download a backup and delete old vouchers.'); } }
+};
+const API = {
+  getSettings: () => DB.get('settings', {}),
+  saveSettings: o => { DB.set('settings', o); return true; },
+  getAccounts: () => ACCOUNTS,
+  nextDvNo(d) {
+    const prefix = (d || '').slice(0, 7) + '-'; let max = 0;
+    Object.keys(DB.get('rec', {})).forEach(n => { if (n.indexOf(prefix) === 0) max = Math.max(max, parseInt(n.slice(prefix.length), 10) || 0); });
+    return prefix + ('000' + (max + 1)).slice(-4);
+  },
+  saveDV(rec) {
+    const key = rec.ctrl || rec.dvNo;   // the control number is the record's id; the DV No. is optional and only printed
+    if (!key) throw new Error('Control No. is required.');
+    if (!rec.payee) throw new Error('Payee is required.');
+    rec.ctrl = key;
+    const all = DB.get('rec', {}), stamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
+    all[key] = { rec, updated: stamp }; DB.set('rec', all);
+    return { ctrl: key, updated: stamp };
+  },
+  listDVs: () => Object.entries(DB.get('rec', {})).map(([k, x]) => ({ no: k, dvNo: x.rec.dvNo || '', date: x.rec.date || '', payee: x.rec.payee, fund: x.rec.fund || '', total: x.rec.total || 0, updated: x.updated }))
+    .sort((a, b) => (b.updated + b.no).localeCompare(a.updated + a.no)),
+  getDV(no) { const x = DB.get('rec', {})[no]; if (!x) throw new Error('DV ' + no + ' not found.'); if (!x.rec.ctrl) x.rec.ctrl = no; return x.rec; },
+  deleteDV(no) { const all = DB.get('rec', {}); delete all[no]; DB.set('rec', all); return true; },
+  exportPdf: r => makePdf(r),
+  /* ---- ORS database (separate from the vouchers) ---- */
+  nextOrsNo(d) {
+    const prefix = (d || '').slice(0, 7) + '-'; let max = 0;
+    Object.keys(DB.get('ors', {})).forEach(n => { if (n.indexOf(prefix) === 0) max = Math.max(max, parseInt(n.slice(prefix.length), 10) || 0); });
+    return prefix + ('000' + (max + 1)).slice(-4);
+  },
+  saveORS(rec) {
+    const key = rec.ctrl || rec.serial;   // control number = record id (not printed); serial no. is optional and printed
+    if (!key) throw new Error('Control No. is required.');
+    if (!rec.payee) throw new Error('Payee is required.');
+    rec.ctrl = key;
+    const all = DB.get('ors', {}), stamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
+    all[key] = { rec, updated: stamp }; DB.set('ors', all);
+    return { ctrl: key, updated: stamp };
+  },
+  listORS: () => Object.entries(DB.get('ors', {})).map(([k, x]) => ({ no: k, serial: x.rec.serial || '', date: x.rec.date || '', payee: x.rec.payee, fund: x.rec.fund || '', total: x.rec.total || 0, updated: x.updated }))
+    .sort((a, b) => (b.updated + b.no).localeCompare(a.updated + a.no)),
+  getORS(no) { const x = DB.get('ors', {})[no]; if (!x) throw new Error('ORS ' + no + ' not found.'); if (!x.rec.ctrl) x.rec.ctrl = no; return x.rec; },
+  deleteORS(no) { const all = DB.get('ors', {}); delete all[no]; DB.set('ors', all); return true; },
+  exportOrsPdf: r => makeOrsPdf(r)
+};
+const run = (fn, ...a) => new Promise((ok, no) => { try { Promise.resolve(API[fn](...a)).then(ok, no); } catch (e) { no(e); } });
+
+/* stand-ins so the shared layout code (drawVoucher_) can run in the browser */
+const HEADER_IMAGE_ID = 'header', FOOTER_IMAGE_ID = 'footer';
+const imageBlob_ = id => DB.get('img_' + id, null);
+const Session = { getScriptTimeZone: () => 'Asia/Manila' };
+const Utilities = { formatDate: d => d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) };
+const SpreadsheetApp = {
+  BorderStyle: { SOLID: 1 },
+  newRichTextValue() { const o = { text: '', runs: [] }, b = { setText(t) { o.text = t; return b; }, setTextStyle(a, z, st) { o.runs.push([a, z, st]); return b; }, build: () => ({ rich: true, text: o.text, runs: o.runs }) }; return b; },
+  newTextStyle() { const st = {}, b = { setFontFamily: () => b, setBold(v) { st.b = v; return b; }, setUnderline(v) { st.u = v; return b; }, setFontSize(v) { st.s = v; return b; }, build: () => st }; return b; }
+};
+function fakeSheet() {
+  const cells = {}, rows = {}, imgs = [], base = { s: 11 };
+  const bulk = new Proxy({}, { get: (t, k) => k === 'setFontSize' ? (v => { base.s = v; return bulk; }) : (() => bulk) });
+  return {
+    cells, rows, imgs, base, getMaxColumns: () => 26, insertColumnsAfter() {}, setColumnWidths() {}, setHiddenGridlines() {},
+    setRowHeight: (r, h) => { rows[r] = h; },
+    insertImage: (blob, c, r) => { const im = { blob, row: r, col: c, dx: 0, dy: 0, setAnchorCellXOffset(v) { this.dx = v; return this; }, setAnchorCellYOffset(v) { this.dy = v; return this; }, w: blob.w, h: blob.h, getWidth() { return this.w; }, getHeight() { return this.h; }, setWidth(v) { this.w = v; return this; }, setHeight(v) { this.h = v; return this; } }; imgs.push(im); return im; },
+    getRange(r, c, nr = 1, nc = 1) {
+      if (nr >= 100) return bulk;
+      const e = cells[r + ',' + c] = cells[r + ',' + c] || { r1: r, c1: c, r2: r, c2: c };
+      if (nr > 1 || nc > 1) { e.r2 = r + nr - 1; e.c2 = c + nc - 1; }
+      const x = { merge: () => x, setBorder(t, l, b, rr) { e.bd = [t, l, b, rr]; return x; }, setHorizontalAlignment(v) { e.h = v; return x; }, setVerticalAlignment(v) { e.v = v; return x; },
+        setWrap: () => x, setFontWeight(v) { e.bold = v === 'bold'; return x; }, setFontSize(v) { e.size = v; return x; }, setNumberFormat(f) { e.fmt = f; return x; }, setValue(v) { e.val = v; return x; }, setRichTextValue(v) { e.val = v; return x; } };
+      return x;
+    }
+  };
+}
+
+/* ---- PDF writer (no libraries): Times fonts, lines, text, JPEG images ---- */
+let _cx;
+const FONTS = { serif: '"Times New Roman",Times,serif', sans: 'Arial,Helvetica,"Liberation Sans",sans-serif' };
+let FAM = 'serif';   // font family used while a PDF is being laid out ('serif' = Times for the DV, 'sans' = Arial/Helvetica for the ORS)
+const mw = (t, b, s) => { _cx = _cx || document.createElement('canvas').getContext('2d'); _cx.font = (b ? 'bold ' : '') + s + 'px ' + FONTS[FAM]; return _cx.measureText(t).width; };
+const famNow = () => (typeof S !== 'undefined' && S && S.font === 'Arial') ? 'sans' : 'serif';   // chosen document font
+const DV_SPEC = { W: 612, H: 936, M: 28.8, NCOL: 34, CW: 21, fam: 'serif' };   // folio, as before
+const WIN = { '\u2013': 0x96, '\u2014': 0x97, '\u2018': 0x91, '\u2019': 0x92, '\u201c': 0x93, '\u201d': 0x94, '\u2022': 0x95, '\u2026': 0x85 };
+const pdfStr = t => { let o = ''; for (const ch of t) { let c = WIN[ch] || ch.charCodeAt(0); if (c > 255) c = 63; const x = String.fromCharCode(c); o += (c === 40 || c === 41 || c === 92) ? '\\' + x : x; } return '(' + o + ')'; };
+const money = (n, f) => { const t = Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); return n < 0 ? (/;/.test(f || '') ? '(' + t + ')' : '-' + t) : t; };
+const f2 = n => n.toFixed(2);
+function runsOf(e, base) {
+  const v = e.val;
+  if (v == null || v === '') return [];
+  if (typeof v === 'number') return [{ t: money(v, e.fmt), b: e.bold, s: e.size || base }];
+  if (v.rich) return v.runs.slice().sort((a, b) => a[0] - b[0]).map(([a, z, st]) => ({ t: v.text.slice(a, z), b: !!st.b, u: !!st.u, s: st.s || base }));
+  return [{ t: String(v), b: e.bold, s: e.size || base }];
+}
+function layout(runs, maxW, k) {
+  const lines = []; let cur = { it: [], w: 0, h: 0, ind: 0 };
+  const nl = () => { lines.push(cur); cur = { it: [], w: hang, h: 0, ind: hang }; };
+  let hang = 0;   // hanging indent: wrapped lines of a checkbox item line up with the text after the box
+  runs.forEach(r => {
+    const s = r.s * k;
+    r.t.split('\n').forEach((seg, i) => {
+      if (i) { hang = 0; nl(); }
+      seg.split(/([\u2610\u2612]|\s+)/).forEach(tok => {
+        if (!tok) return;
+        const box = tok === '\u2610' || tok === '\u2612', sp = /^\s+$/.test(tok), w = box ? s * 0.8 + 3 : mw(tok, r.b, s);
+        if (!sp && cur.it.length && cur.w + w > maxW) nl();
+        if (sp && !cur.it.length) return;
+        if (box && !cur.it.length && !cur.ind) hang = w + mw(' ', r.b, s);
+        cur.it.push({ t: tok, b: r.b, u: r.u, s, w, box, chk: tok === '\u2612', sp }); cur.w += w; cur.h = Math.max(cur.h, s * 1.18);
+      });
+    });
+  });
+  lines.push(cur);
+  lines.forEach(l => { while (l.it.length && l.it[l.it.length - 1].sp) l.w -= l.it.pop().w; if (!l.h) l.h = (runs[0].s * k) * 1.18; });
+  return lines;
+}
+function renderPdf(sh, spec) {
+  spec = spec || DV_SPEC; FAM = spec.fam;
+  const W = spec.W, H = spec.H, M = spec.M, P = 0.75, NCOLS = spec.NCOL, CWS = spec.CW;
+  const maxR = Math.max(1, ...Object.values(sh.cells).map(c => c.r2), ...sh.imgs.map(i => i.row));
+  Object.values(sh.cells).forEach(e => {   // grow any single row whose text wraps beyond its height
+    if (e.r1 !== e.r2) return;
+    const runs = runsOf(e, sh.base.s); if (!runs.length) return;
+    const need = (layout(runs, (e.c2 - e.c1 + 1) * CWS * P - 6, 1).reduce((a, l) => a + l.h, 0) + 6) / P;
+    if (need > (sh.rows[e.r1] || 21)) sh.rows[e.r1] = need;
+  });
+  if (sh.fill) {   // one stretchy row soaks up the leftover height so the form fills the page
+    const target = (H - 2 * M) / P; let others = 0;
+    for (let r = 1; r <= maxR; r++) if (r !== sh.fill.row) others += sh.rows[r] || 21;
+    sh.rows[sh.fill.row] = Math.max(sh.fill.min || 6, sh.rows[sh.fill.row] || 0, target - others);   // never shorter than its own text
+  }
+  const top = [0]; for (let r = 1; r <= maxR; r++) top[r] = top[r - 1] + (sh.rows[r] || 21);
+  const sc = Math.min(P, (H - 2 * M) / top[maxR]), k = sc / P, cw = CWS * sc, x0 = (W - NCOLS * cw) / 2;
+  const X = c => x0 + c * cw, Y = r => H - (M + top[r] * sc);
+  let out = '0.6 w 0 G 0 g\n';
+  Object.values(sh.cells).forEach(e => {
+    const xa = X(e.c1 - 1), xb = X(e.c2), yt = Y(e.r1 - 1), yb = Y(e.r2), bd = e.bd || [0, 0, 0, 0];
+    if (bd[0]) out += `${f2(xa)} ${f2(yt)} m ${f2(xb)} ${f2(yt)} l S\n`;
+    if (bd[1]) out += `${f2(xa)} ${f2(yt)} m ${f2(xa)} ${f2(yb)} l S\n`;
+    if (bd[2]) out += `${f2(xa)} ${f2(yb)} m ${f2(xb)} ${f2(yb)} l S\n`;
+    if (bd[3]) out += `${f2(xb)} ${f2(yt)} m ${f2(xb)} ${f2(yb)} l S\n`;
+    const runs = runsOf(e, sh.base.s); if (!runs.length) return;
+    const lines = layout(runs, xb - xa - 6, k), bh = lines.reduce((a, l) => a + l.h, 0);
+    let ly = e.v === 'top' ? yt - 3 : e.v === 'bottom' ? yb + 3 + bh : yt - ((yt - yb) - bh) / 2;
+    lines.forEach(l => {
+      const ind = l.ind || 0; let x = e.h === 'center' ? (xa + xb - (l.w - ind)) / 2 + ind : e.h === 'right' ? xb - 3 - (l.w - ind) + ind : xa + 3 + ind;
+      const by = ly - l.h * 0.82;
+      l.it.forEach(i => {
+        if (i.box) { const z = i.s * 0.8, bx = x + 1; out += `${f2(bx)} ${f2(by - 1)} ${f2(z)} ${f2(z)} re S\n`;
+          if (i.chk) out += `${f2(bx)} ${f2(by - 1)} m ${f2(bx + z)} ${f2(by - 1 + z)} l S ${f2(bx)} ${f2(by - 1 + z)} m ${f2(bx + z)} ${f2(by - 1)} l S\n`; }
+        else if (!i.sp) out += `BT /F${i.b ? 2 : 1} ${f2(i.s)} Tf ${f2(x)} ${f2(by)} Td ${pdfStr(i.t)} Tj ET\n`;
+        if (i.u && !i.box) out += `${f2(x)} ${f2(by - 1.5)} m ${f2(x + i.w)} ${f2(by - 1.5)} l S\n`;
+        x += i.w;
+      });
+      ly -= l.h;
+    });
+  });
+  const blobs = sh.imgs.map((im, n) => { const w = im.w * sc, h = im.h * sc; out += `q ${f2(w)} 0 0 ${f2(h)} ${f2(X((im.col || 1) - 1) + (im.dx || 0) * sc)} ${f2(Y(im.row - 1) - h - (im.dy || 0) * sc)} cm /Im${n} Do Q\n`; return im.blob; });
+  return { content: out, blobs };
+}
+function buildPdf(content, blobs, spec) {
+  spec = spec || DV_SPEC;
+  const FN = spec.fam === 'sans' ? ['Helvetica', 'Helvetica-Bold'] : ['Times-Roman', 'Times-Bold'];
+  const parts = [], offs = []; let len = 0;
+  const bytes = s => { const u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i) & 255; return u; };
+  const push = x => { const b = typeof x === 'string' ? bytes(x) : x; parts.push(b); len += b.length; };
+  const obj = (n, dict, stream) => { offs[n] = len; push(n + ' 0 obj\n' + dict + '\n'); if (stream) { push('stream\n'); push(stream); push('\nendstream\n'); } push('endobj\n'); };
+  const cs = bytes(content);
+  push('%PDF-1.4\n');
+  obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
+  obj(2, '<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+  obj(3, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${spec.W} ${spec.H}] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> /XObject << ${blobs.map((b, i) => `/Im${i} ${7 + i} 0 R`).join(' ')} >> >> >>`);
+  obj(4, `<< /Length ${cs.length} >>`, cs);
+  obj(5, `<< /Type /Font /Subtype /Type1 /BaseFont /${FN[0]} /Encoding /WinAnsiEncoding >>`);
+  obj(6, `<< /Type /Font /Subtype /Type1 /BaseFont /${FN[1]} /Encoding /WinAnsiEncoding >>`);
+  blobs.forEach((b, i) => { const u = bytes(atob(b.url.split(',')[1])); obj(7 + i, `<< /Type /XObject /Subtype /Image /Width ${b.w} /Height ${b.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${u.length} >>`, u); });
+  const n = 7 + blobs.length, xr = len;
+  push('xref\n0 ' + n + '\n0000000000 65535 f \n');
+  for (let i = 1; i < n; i++) push(String(offs[i]).padStart(10, '0') + ' 00000 n \n');
+  push(`trailer\n<< /Size ${n} /Root 1 0 R >>\nstartxref\n${xr}\n%%EOF`);
+  const out = new Uint8Array(len); let p = 0; parts.forEach(b => { out.set(b, p); p += b.length; });
+  return out;
+}
+async function makeOrsPdf(r) {
+  const sh = fakeSheet(); drawOrs_(sh, r);
+  const spec = Object.assign({}, ORS_SPEC, { fam: famNow() });
+  const { content, blobs } = renderPdf(sh, spec), pdf = buildPdf(content, blobs, spec);
+  let bin = ''; for (let i = 0; i < pdf.length; i += 0x8000) bin += String.fromCharCode.apply(null, pdf.subarray(i, i + 0x8000));
+  return { name: 'ORS_' + String(r.serial || r.ctrl || 'Draft').replace(/[^\w-]/g, '_') + '.pdf', b64: btoa(bin), url: '' };
+}
+async function makePdf(r) {
+  const sh = fakeSheet(); drawVoucher_(sh, r);
+  const spec = Object.assign({}, DV_SPEC, { fam: famNow() });
+  const { content, blobs } = renderPdf(sh, spec), pdf = buildPdf(content, blobs, spec);
+  let bin = ''; for (let i = 0; i < pdf.length; i += 0x8000) bin += String.fromCharCode.apply(null, pdf.subarray(i, i + 0x8000));
+  return { name: 'DV_' + String(r.dvNo || r.ctrl || 'Draft').replace(/[^\w-]/g, '_') + '.pdf', b64: btoa(bin), url: '' };
+}
+
+</script>
+<script>
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt = n => Number(n || 0).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); };
+const longDate = s => s ? new Date(s + 'T00:00').toLocaleDateString('en-PH', {year:'numeric', month:'long', day:'numeric'}) : '';
+let S = {}, ACC = [];
+const BYCODE = {};
+let ACCS = [];
+
+/* ---- amount in words (Philippine pesos) ---- */
+const W1 = ['', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE', 'TEN', 'ELEVEN', 'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN', 'SIXTEEN', 'SEVENTEEN', 'EIGHTEEN', 'NINETEEN'];
+const W10 = ['', '', 'TWENTY', 'THIRTY', 'FORTY', 'FIFTY', 'SIXTY', 'SEVENTY', 'EIGHTY', 'NINETY'];
+function words999(n) {
+  const p = [];
+  if (n >= 100) { p.push(W1[Math.floor(n / 100)], 'HUNDRED'); n %= 100; }
+  if (n >= 20) { p.push(W10[Math.floor(n / 10)]); n %= 10; }
+  if (n) p.push(W1[n]);
+  return p.join(' ');
+}
+function pesosInWords(amount) {
+  const cents = Math.round(Math.abs(amount) * 100), pesos = Math.floor(cents / 100), c = cents % 100, parts = [];
+  let n = pesos;
+  [[1e9, 'BILLION'], [1e6, 'MILLION'], [1e3, 'THOUSAND']].forEach(([v, name]) => { if (n >= v) { parts.push(words999(Math.floor(n / v)), name); n %= v; } });
+  if (n) parts.push(words999(n));
+  return `${parts.length ? parts.join(' ') : 'ZERO'} ${pesos === 1 ? 'PESO' : 'PESOS'} & ${String(c).padStart(2, '0')}/100 ONLY`;
+}
+function genWords() {
+  const a = (!$('[data-k=netOfTax]').checked && $('#wordsBasis').value === 'gross') ? num('amt') : net();   // net of tax is always based on the Amount Due
+  if (!(a > 0)) return toast('Enter the amount first', true);
+  const d = $('[data-k=desc]');
+  const base = d.value.replace(/\s*in the total amount of [\s\S]*$/i, '').trimEnd();   // replaces an earlier generated sentence
+  d.value = (base ? base + ' ' : '') + 'in the total amount of ' + pesosInWords(a) + ($('[data-k=netOfTax]').checked ? ', NET OF TAX' : '');
+}
+$('[data-k=amt]').oninput = recalc; $('[data-k=adj]').oninput = recalc; $('#genWords').onclick = genWords;
+const syncBasis = () => { const c = $('[data-k=netOfTax]').checked, w = $('#wordsBasis'); if (c) w.value = 'net'; w.disabled = c; };
+$('[data-k=netOfTax]').onchange = syncBasis;
+
+/* ---- chart of accounts dropdown (array comes from AccountsData.gs) ---- */
+const normCode = v => { const d = String(v).replace(/\D/g, ''); return d.length === 10 ? `${d[0]}-${d.slice(1,3)}-${d.slice(3,5)}-${d.slice(5,8)}-${d.slice(8)}` : String(v).trim(); };
+function buildAccounts() {
+  ACCS = ACC.map(([code, name, dc]) => ({ code, name, dc, k: (name + ' ' + code + ' ' + code.replace(/-/g, '')).toLowerCase() }));
+  ACCS.forEach(a => BYCODE[a.code] = a);
+}
+let ddRow = null, ddIn = null, ddList = [], ddIdx = -1;
+const dd = () => $('#dd');
+function ddClose() { dd().style.display = 'none'; ddRow = ddIn = null; }
+function ddOpen(tr, inp) {
+  ddRow = tr; ddIn = inp;
+  const toks = inp.value.toLowerCase().split(/\s+/).filter(Boolean);
+  const src = tr.dataset.ors ? (inp.dataset.q === 'mfo' ? PAPS : OBJS) : ACCS;   // ORS rows only offer the PAP / Object lists
+  const all = src.filter(a => toks.every(t => a.k.includes(t)));
+  ddList = all.slice(0, 60); ddIdx = ddList.length ? 0 : -1;
+  const box = dd();
+  box.innerHTML = ddList.map((a, i) => `<div data-i="${i}" class="${i === ddIdx ? 'on' : ''}"><b>${esc(a.code)}</b><span>${esc(a.name)}</span>${a.tag ? '<i style="margin-left:auto;color:var(--mut);font-style:normal">' + esc(a.tag) + '</i>' : ''}</div>`).join('')
+    + (all.length > 60 ? `<div class="ft">Showing 60 of ${all.length} - keep typing to narrow</div>` : '')
+    + (!all.length ? '<div class="ft">No match - you can still type it manually</div>' : '');
+  const r = inp.getBoundingClientRect();
+  box.style.left = Math.max(4, Math.min(r.left, innerWidth - 450)) + 'px';
+  box.style.top = (r.bottom + 2) + 'px'; box.style.display = 'block';
+  box.onmousedown = e => { e.preventDefault(); const d = e.target.closest('[data-i]'); if (d) ddPick(ddList[+d.dataset.i]); };
+}
+function ddPick(a) {
+  if (!a || !ddRow) return;
+  const tr = ddRow;
+  if (tr.dataset.ors) {   // ORS particulars line
+    const f = ddIn && ddIn.dataset.q;
+    if (f === 'mfo') ddIn.value = a.code;
+    else { tr.querySelector('[data-q=title]').value = a.name; tr.querySelector('[data-q=uacs]').value = a.code; }
+    ddClose(); tr.querySelector(f === 'title' ? '[data-q=mfo]' : '[data-q=amt]').focus(); return;
+  }
+  tr.querySelector('[data-a=title]').value = a.name; tr.querySelector('[data-a=uacs]').value = a.code;
+  tr.querySelector('[data-a=dr]').placeholder = a.dc === 'D' ? 'normal side' : '';
+  tr.querySelector('[data-a=cr]').placeholder = a.dc === 'C' ? 'normal side' : '';
+  ddClose(); tr.querySelector(a.dc === 'D' ? '[data-a=dr]' : '[data-a=cr]').focus();
+}
+function ddMove(d) {
+  if (!ddList.length) return;
+  ddIdx = (ddIdx + d + ddList.length) % ddList.length;
+  [...dd().querySelectorAll('[data-i]')].forEach((el, i) => el.classList.toggle('on', i === ddIdx));
+  dd().querySelector('.on').scrollIntoView({ block: 'nearest' });
+}
+function hookAcct(tr) {
+  const AK = tr.dataset.ors ? 'q' : 'a';
+  (tr.dataset.ors ? ['title', 'mfo', 'uacs'] : ['title', 'uacs']).map(n => tr.querySelector('[data-' + AK + '=' + n + ']')).forEach(inp => {
+    inp.onfocus = inp.oninput = () => ddOpen(tr, inp);
+    inp.onblur = () => { if (tr.dataset.ors) orsCheck(tr, inp); else if (inp.dataset.a === 'uacs') inp.value = normCode(inp.value); ddClose(); };
+    inp.onkeydown = e => {
+      if (!ddRow) return;
+      if (e.key === 'ArrowDown') { e.preventDefault(); ddMove(1); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); ddMove(-1); }
+      else if (e.key === 'Enter' && ddIdx >= 0) { e.preventDefault(); ddPick(ddList[ddIdx]); }
+      else if (e.key === 'Escape' || e.key === 'Tab') ddClose();
+    };
+  });
+}
+addEventListener('scroll', () => { if (ddRow) ddClose(); }, true);
+
+function toast(m, bad) { const t = $('#toast'); t.textContent = m; t.style.background = bad ? '#b42318' : '#1f2933'; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 2600); }
+const fail = (e, sticky) => {
+  const m = (e && e.message) || String(e);
+  toast(m, true);
+  if (sticky) { const b = $('#err'); b.textContent = 'Problem loading data: ' + m + '  (click to dismiss)'; b.style.display = 'block'; }
+};
+function el(h) { const t = document.createElement('template'); t.innerHTML = h.trim(); return t.content.firstChild; }
+
+/* tabs */
+$$('.tab').forEach(b => b.onclick = () => {
+  $$('.tab').forEach(x => x.classList.toggle('on', x === b));
+  $$('section').forEach(s => s.classList.toggle('on', s.id === b.dataset.t));
+  if (b.dataset.t === 'list') loadList();
+  if (b.dataset.t === 'orsList') loadOrsList();
+});
+
+/* dynamic rows */
+const MAXA = 16, DEF_ADJ = 'Less: Withholding Tax';
+function addA(v = {}) {
+  if ($$('#abody tr').length >= MAXA) return toast('Form fits 16 accounting lines', true);
+  const tr = el(`<tr><td><input class="dd-in" data-a="title" placeholder="Select account title" autocomplete="off"></td><td><input class="dd-in" data-a="uacs" placeholder="UACS code" autocomplete="off"></td>
+    <td><input class="num" type="number" step="0.01" data-a="dr"></td><td><input class="num" type="number" step="0.01" data-a="cr"></td><td><button class="x" type="button">×</button></td></tr>`);
+  tr.querySelectorAll('[data-a]').forEach(i => { i.value = v[i.dataset.a] ?? ''; i.oninput = recalc; });
+  hookAcct(tr);
+  tr.querySelector('.x').onclick = () => { tr.remove(); recalc(); };
+  $('#abody').appendChild(tr);
+}
+$('#addA').onclick = () => addA();
+const rowVals = (tr, k) => { const o = {}; tr.querySelectorAll(`[data-${k}]`).forEach(i => o[i.dataset[k]] = i.value.trim()); return o; };
+
+const num = k => +$('[data-k=' + k + ']').value || 0;
+const net = () => num('amt') - num('adj');   // Amount Due = line 1 less the adjustment (e.g. withholding tax)
+function recalc() {
+  $('#total').textContent = fmt(net());
+  const dr = $$('#abody [data-a=dr]').reduce((a, i) => a + (+i.value || 0), 0);
+  const cr = $$('#abody [data-a=cr]').reduce((a, i) => a + (+i.value || 0), 0);
+  $('#bal').textContent = (dr || cr) && Math.abs(dr - cr) > 0.004 ? `Debit (${fmt(dr)}) and credit (${fmt(cr)}) are not balanced` : '';
+}
+
+/* collect / fill */
+function collect() {
+  const r = { entity: S.entity || '', mode: ($('[name=mode]:checked') || {}).value || '', acct: [] };
+  $$('[data-k]').forEach(i => r[i.dataset.k] = i.type === 'checkbox' ? i.checked : i.value.trim());
+  $$('#abody tr').forEach(tr => { const o = rowVals(tr, 'a'); if (o.title || o.dr || o.cr) r.acct.push(o); });
+  r.total = net(); r.netWords = r.total > 0 ? pesosInWords(r.total) : '';
+  return r;
+}
+function fill(r) {
+  if (r.parts && !('desc' in r)) { const [a = {}, b = {}] = r.parts; Object.assign(r, { desc: a.desc, rc: a.rc, mfo: a.mfo, amt: a.amt, adjLabel: b.desc, adj: b.amt }); }  // older saved vouchers
+  $$('[data-k]').forEach(i => { const k = i.dataset.k, v = k in r ? r[k] : (k === 'adjLabel' ? DEF_ADJ : ''); if (i.type === 'checkbox') i.checked = !!v; else i.value = v ?? ''; });
+  $$('[name=mode]').forEach(i => i.checked = i.value === r.mode);
+  $('#abody').innerHTML = '';
+  (r.acct && r.acct.length ? r.acct : [{}]).forEach(addA);
+  syncBasis(); recalc();
+}
+async function newVoucher() {
+  const d = today();
+  let no = ''; try { no = await run('nextDvNo', d); } catch (e) { fail(e); }
+  fill({ ctrl: no, dvNo: '', date: d, fund: S.fund, supName: S.supName, supDesig: S.supDesig, accName: S.accName, accPos: S.accPos, agName: S.agName, agPos: S.agPos });
+  $('#status').textContent = 'New voucher';
+}
+
+/* actions */
+$('#save').onclick = async () => {
+  const r = collect();
+  try { const res = await run('saveDV', r); toast('Saved ' + res.ctrl); $('#status').textContent = 'Saved ' + res.updated; }
+  catch (e) { fail(e); }
+};
+$('#new').onclick = newVoucher;
+$('#pdf').onclick = () => exportPdf(collect());
+
+async function loadList() {
+  try {
+    const rows = await run('listDVs'), q = $('#q').value.toLowerCase();
+    const f = rows.filter(r => (r.no + ' ' + r.dvNo + ' ' + r.payee).toLowerCase().includes(q));
+    $('#empty').style.display = f.length ? 'none' : 'block';
+    $('#lbody').innerHTML = f.map(r => `<tr><td>${esc(r.no)}</td><td>${esc(r.dvNo)}</td><td>${esc(r.date)}</td><td>${esc(r.payee)}</td><td style="text-align:right">${fmt(r.total)}</td>
+      <td style="white-space:nowrap"><button class="b" data-o="${esc(r.no)}">Open</button> <button class="b" data-pr="${esc(r.no)}">PDF</button> <button class="x" data-d="${esc(r.no)}" title="Delete">🗑</button></td></tr>`).join('');
+    $$('[data-o]').forEach(b => b.onclick = async () => { try { fill(await run('getDV', b.dataset.o)); $('.tab[data-t=form]').click(); $('#status').textContent = 'Editing ' + b.dataset.o; } catch (e) { fail(e); } });
+    $$('[data-pr]').forEach(b => b.onclick = async () => { try { exportPdf(await run('getDV', b.dataset.pr)); } catch (e) { fail(e); } });
+    $$('[data-d]').forEach(b => b.onclick = async () => { if (confirm('Delete DV ' + b.dataset.d + '?')) { await run('deleteDV', b.dataset.d); loadList(); } });
+  } catch (e) { fail(e); }
+}
+$('#q').oninput = loadList; $('#refresh').onclick = loadList;
+
+$('#saveSet').onclick = async () => {
+  const o = {}; $$('[data-s]').forEach(i => o[i.dataset.s] = i.value.trim());
+  try { await run('saveSettings', o); S = o; toast('Settings saved'); } catch (e) { fail(e); }
+};
+
+/* ---------- PDF export (built on the server, see Pdf.gs) ---------- */
+let pvFile = null, pvUrl = '';
+function pvClose() { $('#pv').style.display = 'none'; $('#pvFrame').src = 'about:blank'; if (pvUrl) URL.revokeObjectURL(pvUrl); pvUrl = ''; pvFile = null; }
+function pvDownload() {
+  if (!pvFile) return;
+  const a = document.createElement('a');
+  a.href = pvUrl; a.download = pvFile.name;
+  document.body.appendChild(a); a.click(); a.remove();
+  $('#status').textContent = 'PDF downloaded: ' + pvFile.name;
+  toast('PDF downloaded: ' + pvFile.name);
+}
+async function exportPdf(r, fn) {
+  r.entity = r.entity || S.entity || '';
+  toast('Generating PDF...');
+  try {
+    const f = await run(fn || 'exportPdf', r);
+    const bin = atob(f.b64), u8 = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    if (pvUrl) URL.revokeObjectURL(pvUrl);
+    pvFile = f; pvUrl = URL.createObjectURL(new Blob([u8], { type: 'application/pdf' }));
+    $('#pvName').textContent = 'Preview: ' + f.name;
+    $('#pvFrame').src = pvUrl;
+    $('#pv').style.display = 'flex';
+  } catch (e) { fail(e); }
+}
+$('#pvDl').onclick = pvDownload;
+$('#pvClose').onclick = pvClose;
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && pvFile) pvClose(); });
+
+/* init: draw the form first, then load server data */
+const INIT_DONE = (async () => {
+  fill({ date: today() });
+  try {
+    S = await run('getSettings');
+    $$('[data-s]').forEach(i => i.value = S[i.dataset.s] || '');
+    ['fund', 'supName', 'supDesig', 'accName', 'accPos', 'agName', 'agPos'].forEach(k => { const i = $('[data-k=' + k + ']'); if (i && !i.value) i.value = S[k] || ''; });
+  } catch (e) { fail(e, true); }
+  try { ACC = await run('getAccounts'); buildAccounts(); } catch (e) { fail(e, true); }
+  try { $('[data-k=ctrl]').value = await run('nextDvNo', today()); } catch (e) { fail(e, true); }
+})();
+</script>
+<script>
+/* ===== ORS tab: form, records (its own database), PDF ===== */
+/* ---- lists the ORS is limited to (PAP / MFO and Object of Expenditures) ---- */
+const PAPS = [["A.I.a", "General Management and Supervision", "100000100001000", "Regular"], ["A.I.b", "Administration of Personnel Benefits", "100000100002000", "Regular"], ["A.II.a.1", "Provision of management and corporate planning and legal services", "200000100001000", "Regular"], ["A.II.a.2", "Coordination and formulation of policies on international cooperation in statistics and civil registration", "200000100002000", "Regular"], ["A.II.a.3", "Development and maintenance of information systems and databases", "200000100003000", "Regular"], ["A.II.a.4", "Coordination in the development of statistical methodologies", "200000100004000", "Regular"], ["A.III.a.1", "Conduct of censuses and surveys on agriculture, fisheries, industry and services sectors", "310100100001000", "Regular"], ["A.III.a.2", "Conduct of household-based censuses and surveys", "310100100002000", "Regular"], ["A.III.a.3", "Generation/compilation of administrative-based statistics", "310100100003000", "Regular"], ["A.III.b.1", "Statistical planning, programming, budgeting, monitoring and evaluation", "310200100001000", "Regular"], ["A.III.b.2", "Development and improvement of statistical framework and standards", "310200100002000", "Regular"], ["A.III.b.3", "Coordination of statistical activities at the national and local levels", "310200100003000", "Regular"], ["A.III.c.1", "Processing and archiving of civil registry documents", "320100100001000", "Regular"], ["A.III.c.2", "Issuance of Civil Registration Certifications/Authentications of Documents", "320100100002000", "Regular"], ["A.III.c.3", "Technical Supervision over local civil registrars", "320100100003000", "Regular"], ["CAF", "Census of Agriculture and Fisheries", "310100200002000", "Local"], ["CPBI", "Census of Philippine Business and Industry", "310100200004000", "Local"], ["ASPBI", "Annual Survey of Philippine Business and Industry", "310100200005000", "Local"], ["APIS", "Annual Poverty Indicator Survey", "310100200006000", "Local"], ["PEENRA", "Establishment of Philippine Economic - Environmental and Natural Resources Accounts (PEENRA) unit towards the compilation of Green GDP of the Philippines", "310100200011000", "Local"], ["SICT", "Annual Survey of Information and Communication Technology", "310100200012000", "Local"], ["FIES", "Family Income and Expenditures Survey", "310100200013000", "Local"], ["NDHS", "National Demographic Health Survey", "310100200014000", "Local"], ["CPH", "Census of Population and Housing", "310100200015000", "Local"], ["UMID", "Unified Multi-Purpose ID (UMID) System- Central Verification and Enrollment Agency Component", "320100200001000", "Local"], ["DEDSFIGI", "Development/Enhancement of the Design of Statistical Integrating Geospatial Information", "310100200017000", "Local"], ["CBMS", "Generation/Compilation of Community-Based Statistics", "310100200021000", "Local"], ["Philsys", "Philippine Identification System", "320100200005000", "Local"], ["Sorsogon", "Construction of Sorsogon Building", "200000200010000", "Local"], ["FLEMMS", "Functional Literacy, Education and Mass Media (FLEMMS)", "310100200016000", "Local"], ["STEP", "Survey of Tourism Establishments in the Philippines", "310100200022000", "Local"], ["OWS/ISLE", "Occupational Wages Survey (OWS) / Integrated Survey on Labor and Employment", "310100200025000", "Local"], ["NMS", "National Migration Survey", "310100200008000", "Local"], ["SFD", "Survey of Food Demand", "310100200026000", "Local"], ["GATS", "Global Adult Tobacco Survey", "310100100002001", "Local"]].map(([code, name, num, g]) => ({ code, name: name + ' (' + num + ')', tag: g === 'Regular' ? 'Regular' : 'Locally funded', k: (code + ' ' + name + ' ' + num).toLowerCase() }));
+const OBJS = [["5010101001", "Basic Salary - Civilian", "PS"], ["5010102000", "Salaries and Wages - Casual/Contractual", "PS"], ["5010201001", "PERA - Civilian", "PS"], ["5010202000", "Representation Allowance", "PS"], ["5010203001", "Transportation Allowance", "PS"], ["5010204001", "Clothing/Uniform Allowance - Civilian", "PS"], ["5010207001", "Quarters Allowance", "PS"], ["5010211001", "Hazard Pay", "PS"], ["5010213001", "Overtime Pay", "PS"], ["5010299001", "Per Diems- Civilian", "PS"], ["5010214001", "Year-End Bonus", "PS"], ["5010216001", "Mid-Year", "PS"], ["5010215001", "Cash Gift-Civilian", "PS"], ["5010299011", "Collective Negotiation Agreement Incentive", "PS"], ["5010299012", "Productivity Enhancement Incentive-Civilian", "PS"], ["5010302001", "Pag-IBIG- Civilian", "PS"], ["5010303001", "PhilHealth- Civilian", "PS"], ["5010304001", "ECIP- Civilian", "PS"], ["5010499010", "Lumpsum for Step Incement- Length of Service", "PS"], ["5010499015", "Loyalty Award - Civilian", "PS"], ["5010499099", "Other Personnel Benefits", "PS"], ["5010403001", "Terminal Leave Benefits", "PS"], ["5010301000", "Retirement and Life Insurance Premiums", "PS"], ["5020101000", "Traveling Expense - Local", "MOOE"], ["5020102000", "Traveling Expense - Foreign", "MOOE"], ["5020201002", "Training Expenses", "MOOE"], ["5020201001", "ICT Training", "MOOE"], ["5020301002", "Office Supplies Expenses", "MOOE"], ["5020302000", "Accountable Forms Expenses", "MOOE"], ["5020307000", "Drugs and Medicine Expenses", "MOOE"], ["5020301001", "ICT Supplies", "MOOE"], ["5020309000", "Fuel, Oil & Lubricants", "MOOE"], ["5020321002", "Semi-Expendable Office Equipment", "MOOE"], ["5020321003", "Semi-Expendable ICT Equipment", "MOOE"], ["5020321007", "Semi-Expendable Communication Equipment", "MOOE"], ["5020321011", "Semi-Expendable Printing Equipment", "MOOE"], ["5020321099", "Semi-Expendable Other Machinery & Equipment", "MOOE"], ["5020322001", "Semi- Expendable Furniture & Fixtures", "MOOE"], ["5020322002", "Books", "MOOE"], ["5020399000", "Other Supplies Expense", "MOOE"], ["5020401000", "Water Expenses", "MOOE"], ["5020402000", "Electricity Expenses", "MOOE"], ["5020501000", "Postage and Courier Services", "MOOE"], ["5020502001", "Telephone - Mobile", "MOOE"], ["5020502002", "Telephone - Landline", "MOOE"], ["5020503000", "Internet Expenses", "MOOE"], ["5020504000", "Cable, Satellite Expenses", "MOOE"], ["5020701002", "Survey Expenses", "MOOE"], ["5021101000", "Legal Services", "MOOE"], ["5021102000", "Auditing Services", "MOOE"], ["5021103001", "ICT Consultancy", "MOOE"], ["5021103002", "Consultancy Services", "MOOE"], ["5021199000", "Other Professional Services", "MOOE"], ["5021202000", "Janitorial Services", "MOOE"], ["5021201000", "Environment and Sanitary Services", "MOOE"], ["5021203000", "Security Services", "MOOE"], ["5021299001", "Other General Services-ICT Services", "MOOE"], ["5021299099", "Other General Services", "MOOE"], ["5021304001", "Repairs and Maintenance - Buildings", "MOOE"], ["5021305002", "Repairs and Maintenance - Office Equipment", "MOOE"], ["5021305003", "Repairs and Maintenance - ICT Equipment", "MOOE"], ["5021305099", "Repairs and Maintenance - Other Machinery and Equipment", "MOOE"], ["5021306001", "Repairs and Maintenance - Motor Vehicles", "MOOE"], ["5021306099", "Repairs and Maintenance - Other Transportation Equipment", "MOOE"], ["5021307000", "Repairs and Maintenance - Furniture and Fixtures", "MOOE"], ["5021308099", "Repairs and Maintenance - Other Leased Assets", "MOOE"], ["5020322002", "Repairs and Maintenance - Leased Assets", "MOOE"], ["5021501001", "Taxes, Duties, and Licenses", "MOOE"], ["5021502000", "Fidelity Bond Premiums", "MOOE"], ["5021503000", "Insurance Expenses", "MOOE"], ["5029901000", "Advertising Expenses", "MOOE"], ["5029902000", "Printing & Publication Expenses", "MOOE"], ["5029903000", "Representation Expenses", "MOOE"], ["5029904000", "Transportation & Delivery Expenses", "MOOE"], ["5029905001", "Rent - Building", "MOOE"], ["5029905004", "Rent - Equipment", "MOOE"], ["5029905003", "Rent - Motor Vehicle", "MOOE"], ["5021003000", "Extraordinary & Miscellaneous Expenses", "MOOE"], ["5029907004", "Library and Other Reading Materials Subscription Expense", "MOOE"], ["5029907099", "Other Subscription Expenses", "MOOE"], ["5029907001", "ICT software Subscription", "MOOE"], ["5029907003", "Cloud Computing Service", "MOOE"], ["5029908000", "Donations", "MOOE"], ["5029906000", "Membership Dues, Contribution to Organizations", "MOOE"], ["5029999099", "Other MOE", "MOOE"], ["5060404001", "Building", "CO"], ["5060405003", "ICT Equipment", "CO"], ["5060405007", "Communication Equipment", "CO"], ["5060405012", "Printing Equipment", "CO"], ["5060405015", "ICT Software", "CO"], ["5060405002", "Office Equipment", "CO"], ["5060405099", "Other Machinery and Equipment", "CO"]].map(([code, name, cls]) => ({ code, name, tag: cls, k: (name + ' ' + code).toLowerCase() }));
+function orsCheck(tr, inp) {   // anything typed that is not on the list is cleared
+  const v = inp.value.trim().toLowerCase().replace(/\s+/g, ' '); if (!v) return;
+  const f = inp.dataset.q, src = f === 'mfo' ? PAPS : OBJS;
+  const hit = src.find(a => f === 'title' ? a.name.toLowerCase() === v : a.code.toLowerCase() === v);
+  if (hit) { if (f === 'mfo') inp.value = hit.code; else { tr.querySelector('[data-q=title]').value = hit.name; tr.querySelector('[data-q=uacs]').value = hit.code; } return; }
+  inp.value = ''; toast('Please pick the ' + (f === 'mfo' ? 'MFO/PAP' : f === 'uacs' ? 'UACS code' : 'account title') + ' from the list', true);
+}
+const MAXO = 16, MAXS = 1;
+function addOI(v = {}) {
+  if ($$('#obody tr').length >= MAXO) return toast('The form fits 16 particulars lines', true);
+  const tr = el(`<tr data-ors="1"><td><input data-q="rc"></td><td><input class="dd-in" data-q="title" placeholder="Select account title" autocomplete="off"></td>
+    <td><input class="dd-in" data-q="mfo" placeholder="Select MFO/PAP" autocomplete="off"></td><td><input class="dd-in" data-q="uacs" placeholder="UACS code" autocomplete="off"></td>
+    <td><input class="num" type="number" step="0.01" data-q="amt"></td><td><button class="x" type="button">×</button></td></tr>`);
+  tr.querySelectorAll('[data-q]').forEach(i => { i.value = v[i.dataset.q] ?? ''; i.oninput = recalcOrs; });
+  hookAcct(tr);
+  tr.querySelector('.x').onclick = () => { tr.remove(); recalcOrs(); };
+  $('#obody').appendChild(tr);
+}
+function addOS(v = {}) {
+  if ($$('#sbody tr').length >= MAXS) return toast('Section C has a single line', true);
+  const tr = el(`<tr><td><input type="date" data-st="date"></td><td><input data-st="part"></td><td><input data-st="ref"></td>
+    <td><input class="num" type="number" step="0.01" data-st="ob"></td><td><input class="num" type="number" step="0.01" data-st="pay"></td><td><input class="num" type="number" step="0.01" data-st="pm"></td>
+    <td><button class="x" type="button">×</button></td></tr>`);
+  tr.querySelectorAll('[data-st]').forEach(i => { i.value = v[i.dataset.st] ?? ''; });
+  tr.querySelector('.x').onclick = () => tr.remove();
+  $('#sbody').appendChild(tr);
+}
+$('#addOI').onclick = () => addOI();
+function recalcOrs() { $('#oTotal').textContent = fmt($$('#obody [data-q=amt]').reduce((a, i) => a + (+i.value || 0), 0)); }
+
+function collectOrs() {
+  const r = { items: [], status: [] };
+  $$('[data-os]').forEach(i => r[i.dataset.os] = i.value.trim());
+  $$('#obody tr').forEach(tr => { const o = rowVals(tr, 'q'); if (o.title || o.uacs || o.mfo || o.rc || o.amt) r.items.push(o); });
+  $$('#sbody tr').forEach(tr => { const o = rowVals(tr, 'st'); if (Object.values(o).some(Boolean)) r.status.push(o); });
+  r.total = r.items.reduce((a, o) => a + (+o.amt || 0), 0);
+  return r;
+}
+function fillOrs(r) {
+  $$('[data-os]').forEach(i => { const k = i.dataset.os; i.value = (k in r ? r[k] : '') ?? ''; });
+  $('#obody').innerHTML = ''; (r.items && r.items.length ? r.items : [{}, {}]).forEach(addOI);
+  const st0 = Object.assign({}, (r.status || [])[0] || {}); if (r.purpose && !st0.part) st0.part = r.purpose;   // older ORS: the purpose line now lives in section C
+  $('#sbody').innerHTML = ''; addOS(st0);
+  recalcOrs();
+}
+async function newOrs() {
+  const d = today(); let no = '';
+  try { no = await run('nextOrsNo', d); } catch (e) { fail(e); }
+  fillOrs({ ctrl: no, serial: '', date: d, fund: S.oFund ?? S.fund ?? '', office: S.oOffice || '', address: S.oAddress || '',
+    supName: S.oSupName || '', supPos: S.oSupPos || '', budName: S.oBudName || '', budPos: S.oBudPos || '' });
+  $('#oStatus').textContent = 'New ORS';
+}
+$('#oSave').onclick = async () => {
+  const r = collectOrs();
+  try { const res = await run('saveORS', r); toast('Saved ORS ' + res.ctrl); $('#oStatus').textContent = 'Saved ' + res.updated; } catch (e) { fail(e); }
+};
+$('#oNew').onclick = newOrs;
+$('#oPdf').onclick = () => exportPdf(collectOrs(), 'exportOrsPdf');
+
+async function loadOrsList() {
+  try {
+    const rows = await run('listORS'), q = $('#oq').value.toLowerCase();
+    const f = rows.filter(r => (r.no + ' ' + r.serial + ' ' + r.payee).toLowerCase().includes(q));
+    $('#oempty').style.display = f.length ? 'none' : 'block';
+    $('#olbody').innerHTML = f.map(r => `<tr><td>${esc(r.no)}</td><td>${esc(r.serial)}</td><td>${esc(r.date)}</td><td>${esc(r.payee)}</td><td style="text-align:right">${fmt(r.total)}</td>
+      <td style="white-space:nowrap"><button class="b" data-oo="${esc(r.no)}">Open</button> <button class="b" data-opr="${esc(r.no)}">PDF</button> <button class="x" data-od="${esc(r.no)}" title="Delete">🗑</button></td></tr>`).join('');
+    $$('[data-oo]').forEach(b => b.onclick = async () => { try { fillOrs(await run('getORS', b.dataset.oo)); $('.tab[data-t=ors]').click(); $('#oStatus').textContent = 'Editing ' + b.dataset.oo; } catch (e) { fail(e); } });
+    $$('[data-opr]').forEach(b => b.onclick = async () => { try { exportPdf(await run('getORS', b.dataset.opr), 'exportOrsPdf'); } catch (e) { fail(e); } });
+    $$('[data-od]').forEach(b => b.onclick = async () => { if (confirm('Delete ORS ' + b.dataset.od + '?')) { await run('deleteORS', b.dataset.od); loadOrsList(); } });
+  } catch (e) { fail(e); }
+}
+$('#oq').oninput = loadOrsList; $('#orefresh').onclick = loadOrsList;
+$('#saveSet2').onclick = () => $('#saveSet').onclick();
+function syncFont() { $$('.fontSel').forEach(i => i.value = (S && S.font) || 'Times New Roman'); }
+$$('.fontSel').forEach(sel => sel.onchange = async () => {
+  S.font = sel.value; syncFont();
+  try { await run('saveSettings', S); toast('Font: ' + S.font); } catch (e) { fail(e); }
+});
+INIT_DONE.then(() => { syncFont(); return newOrs(); }).catch(e => fail(e, true));
+</script>
+<script>
+/* ===== settings: header/footer images and backup ===== */
+const toJpeg = file => new Promise((ok, no) => {
+  const im = new Image(), u = URL.createObjectURL(file);
+  im.onload = () => { const k = Math.min(1, 1400 / im.naturalWidth), c = document.createElement('canvas'); c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k);
+    const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(u);
+    ok({ url: c.toDataURL('image/jpeg', 0.92), w: c.width, h: c.height }); };
+  im.onerror = () => no(new Error('Could not read that image.')); im.src = u;
+});
+['Header', 'Footer', 'OrsHeader', 'OrsFooter'].forEach(K => {
+  const key = 'img_' + K.toLowerCase(), st = $('#st' + K), ph = $('#ph' + K);
+  const show = () => { const i = DB.get(key, null); st.textContent = i ? 'Loaded (' + i.w + ' x ' + i.h + ' px)' : 'None';
+    if (ph) { ph.innerHTML = ''; if (i) { const im = new Image(); im.src = i.url; ph.appendChild(im); } else ph.textContent = ph.dataset.empty; } };
+  $('#img' + K).onchange = async e => { const f = e.target.files[0]; if (!f) return; try { DB.set(key, await toJpeg(f)); toast(K + ' image saved'); } catch (x) { fail(x); } show(); };
+  $('#rm' + K).onclick = () => { localStorage.removeItem('dv:' + key); show(); };
+  show();
+});
+$('#bkExport').onclick = () => {
+  const o = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k.indexOf('dv:') === 0) o[k] = localStorage.getItem(k); }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(o)], { type: 'application/json' }));
+  a.download = 'dv-backup-' + today() + '.json'; document.body.appendChild(a); a.click(); a.remove();
+};
+$('#bkImport').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try { const o = JSON.parse(await f.text()); Object.keys(o).forEach(k => { if (k.indexOf('dv:') === 0) localStorage.setItem(k, o[k]); }); toast('Backup restored'); setTimeout(() => location.reload(), 600); }
+  catch (x) { fail(new Error('That file is not a valid backup.')); }
+};
+</script>
+</body>
+</html>
